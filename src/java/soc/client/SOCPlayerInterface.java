@@ -35,10 +35,12 @@ import java.awt.TextArea;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-import java.util.StringTokenizer;
+import java.util.Vector;
 
 
 /**
@@ -46,7 +48,7 @@ import java.util.StringTokenizer;
  *
  * @author Robert S. Thomas
  */
-public class SOCPlayerInterface extends Frame implements ActionListener
+public class SOCPlayerInterface extends Frame
 {
     /**
      * the board display
@@ -123,6 +125,9 @@ public class SOCPlayerInterface extends Frame implements ActionListener
      */
     protected SOCMonopolyDialog monopolyDialog;
 
+    protected Vector history = new Vector();
+    protected int historyCounter = 1;
+
     /**
      * create a new player interface
      *
@@ -169,6 +174,7 @@ public class SOCPlayerInterface extends Frame implements ActionListener
          */
         setLocation(50, 50);
         setSize(660, 600);
+        history.addElement("");
         validate();
     }
 
@@ -232,7 +238,9 @@ public class SOCPlayerInterface extends Frame implements ActionListener
         textInput.setEditable(false);
         textInput.setText("Please wait...");
         add(textInput);
-        textInput.addActionListener(this);
+
+        textInput.addActionListener(new InputActionListener());
+        textInput.addKeyListener(new InputKeyListener());
 
         addWindowListener(new MyWindowAdapter());
     }
@@ -295,31 +303,6 @@ public class SOCPlayerInterface extends Frame implements ActionListener
     public SOCBuildingPanel getBuildingPanel()
     {
         return buildingPanel;
-    }
-
-    /**
-     * send the message that was just typed in
-     */
-    public void actionPerformed(ActionEvent e)
-    {
-        if (e.getSource() == textInput)
-        {
-            // send text, as typed
-            String s = textInput.getText();
-
-            if (s.trim().length() == 0) // don't send if only whitespace
-            {
-                return;
-            }
-            
-            if (s.length() > 100)
-            {
-                s = s.substring(0, 100);
-            }
-
-            textInput.setText("");
-            client.sendText(game, s);
-        }
     }
 
     /**
@@ -554,6 +537,54 @@ public class SOCPlayerInterface extends Frame implements ActionListener
 
         //chatDisplay.setMaximumLines(nrows);
         boardPanel.doLayout();
+    }
+
+    /** send the message that was just typed in, or start editing a private
+     * message */
+    private class InputActionListener implements ActionListener
+    {
+        public void actionPerformed(ActionEvent e)
+        {
+            // send text, as typed
+            String s = textInput.getText();
+
+            if (s.trim().length() > 0) // don't send if only whitespace
+            {
+                if (s.length() > 100)  // limit text sent
+                    s = s.substring(0, 100);
+
+                textInput.setText("");
+                client.sendText(game, s);
+
+                history.insertElementAt(s, history.size() - 1);
+                historyCounter = 1;
+            }
+        }
+    }
+
+    private class InputKeyListener extends KeyAdapter
+    {
+        public void keyPressed(KeyEvent e)
+        {
+            int hs = history.size();
+            int key = e.getKeyCode();
+
+            if ((key == KeyEvent.VK_UP) && (hs > historyCounter))
+            {
+                if (historyCounter == 1)
+                {
+                    history.setElementAt(textInput.getText(), hs - 1);
+                }
+
+                historyCounter++;
+                textInput.setText((String) history.elementAt(hs - historyCounter));
+            }
+            else if ((key == KeyEvent.VK_DOWN) && (historyCounter > 1))
+            {
+                historyCounter--;
+                textInput.setText((String) history.elementAt(hs - historyCounter));
+            }
+        }
     }
 
     private class MyWindowAdapter extends WindowAdapter
