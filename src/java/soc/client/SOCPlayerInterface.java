@@ -304,19 +304,21 @@ public class SOCPlayerInterface extends Frame implements ActionListener
     {
         if (e.getSource() == textInput)
         {
-            String s = textInput.getText().trim();
+            // send text, as typed
+            String s = textInput.getText();
 
+            if (s.trim().length() == 0) // don't send if only whitespace
+            {
+                return;
+            }
+            
             if (s.length() > 100)
             {
                 s = s.substring(0, 100);
             }
-            else if (s.length() == 0)
-            {
-                return;
-            }
 
             textInput.setText("");
-            client.sendText(game, s + "\n");
+            client.sendText(game, s);
         }
     }
 
@@ -336,33 +338,11 @@ public class SOCPlayerInterface extends Frame implements ActionListener
      */
     public void print(String s)
     {
-        StringTokenizer st = new StringTokenizer(s, " \n", true);
-        String row = "";
+        // avoid empty line at bottom by adding \n before all but first
+        if (textDisplay.getText().length() > 0)
+            s = "\n" + s;
 
-        while (st.hasMoreElements())
-        {
-            String tk = st.nextToken();
-
-            if (tk.equals("\n"))
-            {
-                continue;
-            }
-
-            if ((row.length() + tk.length()) > ncols)
-            {
-                textDisplay.append(row + "\n");
-                row = tk;
-
-                continue;
-            }
-
-            row += tk;
-        }
-
-        if (row.trim().length() > 0)
-        {
-            textDisplay.append(row + "\n");
-        }
+        textDisplay.append(s);
     }
 
     /**
@@ -372,33 +352,11 @@ public class SOCPlayerInterface extends Frame implements ActionListener
      */
     public void chatPrint(String s)
     {
-        StringTokenizer st = new StringTokenizer(s, " \n", true);
-        String row = "";
+        // avoid empty line at bottom by adding \n before all but first
+        if (chatDisplay.getText().length() > 0)
+            s = "\n" + s;
 
-        while (st.hasMoreElements())
-        {
-            String tk = st.nextToken();
-
-            if (tk.equals("\n"))
-            {
-                continue;
-            }
-
-            if ((row.length() + tk.length()) > ncols)
-            {
-                chatDisplay.append(row + "\n");
-                row = tk;
-
-                continue;
-            }
-
-            row += tk;
-        }
-
-        if (row.trim().length() > 0)
-        {
-            chatDisplay.append(row + "\n");
-        }
+        chatDisplay.append(s);
     }
 
     /**
