@@ -62,7 +62,6 @@ class SOCChoosePlayerDialog extends Dialog implements ActionListener
         setForeground(Color.black);
         setFont(new Font("Geneva", Font.PLAIN, 12));
         setLayout(null);
-        addNotify();
         setSize(350, 100);
 
         msg = new Label("Please choose a player to steal from:", Label.CENTER);
@@ -87,12 +86,12 @@ class SOCChoosePlayerDialog extends Dialog implements ActionListener
      */
     public void setVisible(boolean b)
     {
+        super.setVisible(b);
+
         if (b)
         {
             buttons[0].requestFocus();
         }
-
-        super.setVisible(b);
     }
 
     /**

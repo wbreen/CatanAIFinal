@@ -89,12 +89,12 @@ class SOCDiscoveryDialog extends Dialog implements ActionListener
      */
     public void setVisible(boolean b)
     {
+        super.setVisible(b);
+
         if (b)
         {
             doneBut.requestFocus();
         }
-
-        super.setVisible(b);
     }
 
     /**
@@ -146,7 +146,6 @@ class SOCDiscoveryDialog extends Dialog implements ActionListener
             {
                 rsrc[i].setSize(sqwidth, sqwidth);
                 rsrc[i].setLocation((i * sqspace) + ((width - ((3 * sqspace) + (4 * sqwidth))) / 2), rsrcY);
-                rsrc[i].draw();
             }
         }
         catch (NullPointerException e) {}
