@@ -8,7 +8,7 @@ with different widths, and some editors mix the two, making things
 worse.
 
 If you use emacs, you can specify this in your .emacs file with:
-  (indent-tabs-mode nil)
+  (setq-default tab-width 4 indent-tabs-mode nil)
 
 Braces hang below the first line of controll blocks, but are not
 indented. See existing code for examples
