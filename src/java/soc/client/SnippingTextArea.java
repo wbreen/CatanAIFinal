@@ -113,14 +113,6 @@ public class SnippingTextArea extends TextArea
     }
 
     /////////////////////////////////////////////////// OVERWRITTEN METHODS
-    public void appendText(String newString)
-    {
-        super.appendText(newString);
-
-        // lines += countLines(newString);
-        // snipText (); 
-    }
-
     /**
      * DOCUMENT ME!
      *
@@ -133,36 +125,6 @@ public class SnippingTextArea extends TextArea
         // lines += countLines(newString);
         // snipText (); 
     }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param newString DOCUMENT ME!
-     * @param x DOCUMENT ME!
-     */
-    public void insertText(String newString, int x)
-    {
-        super.insertText(newString, x);
-
-        // lines += countLines(newString);
-        // snipText (); 
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param newString DOCUMENT ME!
-     * @param x DOCUMENT ME!
-     * @param y DOCUMENT ME!
-     */
-    public void replaceText(String newString, int x, int y)
-    {
-        super.replaceText(newString, x, y);
-
-        // lines += countLines(newString);
-        // snipText (); 
-    }
-
     /**
      * DOCUMENT ME!
      *
@@ -234,7 +196,7 @@ public class SnippingTextArea extends TextArea
             lines--;
         }
 
-        super.setCaretPosition(100000);
+        super.setCaretPosition(getText().length());
     }
 }
 
