@@ -241,7 +241,8 @@ public abstract class Server extends Thread implements Serializable, Cloneable
     {
         public Treater()
         {
-            setDaemon(true);
+            // must use 'this', or jre1.5 linux throws Thread init error
+            this.setDaemon(true);
         }
 
         public void run()
