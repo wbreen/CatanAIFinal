@@ -16,7 +16,7 @@
   <property name="Name"      value="JSettlers" />
   <!-- version under development, e.g. 1.1, 1.2-RC2, 2.0-SNAPSHOT -->
   <property name="version"   value="1.0.4-SNAPSHOT" />
-  <property name="copyright" value="2001-2004 Robert S. Thomas" />
+  <property name="copyright" value="2001-2004 Robb Thomas" />
   <property name="url"       value="http://sourceforge.net/projects/jsettlers" />
 
   <!-- **** See build.properties for client/server startup arguments **** -->
@@ -32,10 +32,11 @@
   <property name="bin.src"        value="src/bin" />
   <property name="java.src"       value="src/java" />
   <property name="test.src"       value="src/test" />
-  <property name="www.src"        value="src/www" />
+  <property name="web.src"        value="src/web" />
 
   <property name="target"         location="target" />
   <property name="classes"        location="${target}/classes" />
+  <property name="bin.target"     location="${target}/bin" />
   <property name="lib.target"     location="${target}/lib" />
   <property name="test.classes"   location="${target}/test-classes" />
   <property name="test.reports"   location="${target}/test-reports" />
@@ -49,7 +50,7 @@
 
   <!-- packaging -->
   <property name="client.jar" value="${Name}.jar" />
-  <property name="server.jar" value="${Name}-Server.jar" />
+  <property name="server.jar" value="JSettled.jar" />
   <property name="test.jar"   value="${Name}-Test.jar" />
 
   <property name="dist.name"     value="${name}-${version}" />
@@ -68,13 +69,14 @@
     <include name="VERSIONS.txt" />
   </fileset>
 
-  <!-- jar file separation -->
+  <!-- jar file packages -->
   <patternset id="server.files">
     <include name="soc/robot/" />
     <include name="soc/server/" />
   </patternset>
   <patternset id="client.files">
-    <include name="soc/" /> <!-- everything... -->
+    <include name="resources/" />
+    <include name="soc/" />       <!-- everything... -->
     <exclude name="soc/robot/" /> <!-- ...except these -->
     <exclude name="soc/server/" />
   </patternset>
@@ -177,7 +179,7 @@
              deprecation="${deprecation}" />
   </target>
  
-  <!-- Create two jars, client and server (which depends on client) -->
+  <!-- Create two jars: client and server (which depends on client) -->
   <target name="build" depends="compile"
           description="Create project jar files.">
       <jar destfile="${target}/${client.jar}" basedir="${classes}">
@@ -193,13 +195,6 @@
           <attribute name="Class-Path" value="${client.jar}" />
         </manifest>
       </jar>
-
-      <!-- Copy basic .html files for applet testing -->
-      <copy toDir="target">
-        <fileset dir="${www.src}">
-          <include name="*.html" />
-        </fileset>
-      </copy>
   </target>
 
   <!-- ************************************** -->
@@ -253,7 +248,7 @@
   <!-- ************************************** -->
 
   <!-- Create installer (requires IzPack) -->
-  <target name="installer" depends="init-libs,check-izpack,build"
+  <target name="installer" depends="check-izpack,build,docs"
           description="Create installer (Need IzPack: http://www.izforge.com/izpack)">
 
       <fail>An installation file has not yet been created.</fail>
@@ -268,18 +263,23 @@
   </target>
 
   <!-- Create distribution tarballs -->
-  <target name="dist" depends="build"
+  <target name="dist" depends="build,docs"
           description="Build distribution tarballs and zips.">
       <property name="dist.tmp" value="${dist}/${dist.name}" />
       <delete dir="${dist.tmp}" quiet="true" />
 
       <copy todir="${dist.tmp}" preservelastmodified="true">
         <fileset refid="readme.files" />
-        <fileset dir="${target}" includes="doc" />
         <!-- program and libs -->
-        <fileset dir="${target}" includes="${client.jar}" />
-        <fileset dir="${target}" includes="${server.jar}" />
-        <fileset dir="${target}" includes="lib/" />
+        <fileset dir="${target}">
+          <include name="${client.jar}" />
+          <include name="${server.jar}" />
+          <include name="docs/" />
+          <include name="lib/" />
+        </fileset>
+      </copy>
+      <copy todir="${dist.tmp}/web">
+        <fileset dir="${web.src}" />
       </copy>
 
       <tar destfile="${dist.tgz}" compression="gzip"
@@ -291,9 +291,14 @@
       <delete dir="${dist.tmp}" quiet="true" />
   </target>
 
-  <!-- Create a source tarball suitable for building Callisto -->
+  <!-- Create a source tarball suitable for building the project -->
   <target name="src" depends="init"
           description="Create a tarball of the source tree">
+      <echo>
+        This copies everything in your "src" directory, so be sure
+        to run on a clean repository only!
+      </echo>
+
       <property name="dist.src.tmp" value="${dist}/${dist.src.name}" />
       <delete dir="${dist.src.tmp}" quiet="true" />
 
@@ -328,6 +333,16 @@
   <!-- Documentation targets -->
   <!-- ************************************** -->
 
+  <!-- all documentation -->
+  <target name="docs" depends="docs.users,javadoc" />
+
+  <target name="docs.users">
+      <!-- No munging, simply copy -->
+      <copy todir="${docs.target}">
+        <fileset dir="${src}/docs" />
+      </copy>
+  </target>
+
   <!-- generate javadoc -->
   <target name="javadoc" depends="init-libs"
           description="Creates javadoc in 'docs/api'">
@@ -341,9 +356,7 @@
                doctitle="${Name}, v ${version}, API Specification"
                windowtitle="${Name} v${version} API"
                additionalparam="-breakiterator">
-        <packageset dir="${java.src}">
-          <include name="soc/**" />
-        </packageset>
+        <packageset dir="${java.src}" />
         <header><![CDATA[<b><a target="_blank" href="${url}">${Name} v${version} API</a></b><br><font size="-2">Built ${date}</font>]]></header>
       </javadoc>
   </target>
