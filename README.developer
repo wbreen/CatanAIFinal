@@ -11,8 +11,16 @@ If you use emacs, you can specify this in your .emacs file with:
   (setq-default tab-width 4 indent-tabs-mode nil)
 
 Braces hang below the first line of controll blocks, but are not
-indented. See existing code for examples
+indented. See existing code for examples.
 
+If you use emacs, you can specify this in your .emacs file with:
+  (defun my-java-mode-hook()
+    (c-set-offset 'substatement-open 0)
+    (c-set-offset 'statement-case-open 0)
+    (c-set-offset 'case-label 0)
+    )
+
+  (add-hook 'java-mode-hook 'my-java-mode-hook)
 
 CVS
 ---
