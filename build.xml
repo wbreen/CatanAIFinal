@@ -235,9 +235,9 @@
         </batchtest>
       </junit>
 
-      <junitreport>
+      <junitreport todir="${test.reports}">
         <fileset dir="${test.reports}" includes="TEST-*.xml" />
-        <report format="noframes" />
+        <report format="frames" todir="${test.reports}" />
       </junitreport>
 
       <fail if="test.failure" message="There were test failures." />
