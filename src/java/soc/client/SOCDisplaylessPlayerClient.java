@@ -203,14 +203,12 @@ public class SOCDisplaylessPlayerClient implements Runnable
         }
         catch (IOException e)
         {
-            if (!connected)
+            if (connected)
             {
-                return;
+                ex = e;
+                System.err.println("could not read from the net: " + ex);
+                destroy();
             }
-
-            ex = e;
-            System.err.println("could not read from the net: " + ex);
-            destroy();
         }
     }
 
