@@ -1346,7 +1346,7 @@ public class SOCServer extends Server
 
                     SOCTextMsg textMsgMes = (SOCTextMsg) mes;
 
-                    if ((textMsgMes.getNickname().equals("Sass")) || (textMsgMes.getNickname().equals("Basco")) || (textMsgMes.getNickname().equals("2Aquarius")) || (textMsgMes.getNickname().equals("Petey17")) || (textMsgMes.getNickname().equals("Main")) || (textMsgMes.getNickname().equals("Klaus")) || (textMsgMes.getNickname().equals("Archy")) || (textMsgMes.getNickname().equals("debug")))
+                    if (textMsgMes.getNickname().equals("debug"))
                     {
                         if (textMsgMes.getText().startsWith("*KILLCHANNEL*"))
                         {
@@ -1458,7 +1458,7 @@ public class SOCServer extends Server
                     //
                     // useful for debuging 
                     //
-                    if ((gameTextMsgMes.getNickname().equals("Sass")) || (gameTextMsgMes.getNickname().equals("Basco")) || (gameTextMsgMes.getNickname().equals("2Aquarius")) || (gameTextMsgMes.getNickname().equals("Petey17")) || (gameTextMsgMes.getNickname().equals("Main")) || (gameTextMsgMes.getNickname().equals("Klaus")) || (gameTextMsgMes.getNickname().equals("Archy")) || (gameTextMsgMes.getNickname().equals("debug")))
+                    if (gameTextMsgMes.getNickname().equals("debug"))
                     {
                         if (gameTextMsgMes.getText().startsWith("rsrcs:"))
                         {
@@ -2086,23 +2086,19 @@ public class SOCServer extends Server
     {
         if (c != null)
         {
+            boolean useDefault = false;
+			SOCRobotParameters params = null;
             //
             // send the current robot parameters
             //
             try
             {
-                SOCRobotParameters params = SOCDBHelper.retrieveRobotParams(mes.getNickname());
+                params = SOCDBHelper.retrieveRobotParams(mes.getNickname());
                 D.ebugPrintln("*** Robot Parameters for " + mes.getNickname() + " = " + params);
 
-                if (params != null)
+                if (params == null)
                 {
-                    c.put(SOCUpdateRobotParams.toCmd(params));
-
-                    //
-                    // add this connection to the robot list
-                    //
-                    c.data = mes.getNickname();
-                    robots.addElement(c);
+                    useDefault = true;
                 }
             }
             catch (java.sql.SQLException sqle)
@@ -2113,18 +2109,23 @@ public class SOCServer extends Server
                 }
                 catch (java.sql.SQLException e)
                 {
-                    System.out.println("Problem connecting to db.  Using default robot parameters.");
-                    
-					SOCRobotParameters params = new SOCRobotParameters(120, 35, 0.13f, 1.0f, 1.0f, 3.0f, 1.0f, 1, 1);
-					c.put(SOCUpdateRobotParams.toCmd(params));
-
-					//
-					// add this connection to the robot list
-					//
-					c.data = mes.getNickname();
-					robots.addElement(c);
+                    useDefault = true;
                 }
             }
+
+            if (useDefault)
+            {
+                System.out.println("Problem connecting to db.  Using default robot parameters.");
+
+                params = new SOCRobotParameters(120, 35, 0.13f, 1.0f, 1.0f, 3.0f, 1.0f, 1, 1);
+                c.put(SOCUpdateRobotParams.toCmd(params));
+            }
+
+            //
+            // add this connection to the robot list
+            //
+            c.data = mes.getNickname();
+            robots.addElement(c);
         }
     }
 
@@ -2324,7 +2325,6 @@ public class SOCServer extends Server
                     D.ebugPrintln("*** " + c.data + " joined the game " + gameName);
 
                     //messageToGame(gameName, new SOCGameTextMsg(gameName, SERVERNAME, n+" joined the game"));
-
                     /**
                      * Let everyone else know about the change
                      */
@@ -2451,9 +2451,7 @@ public class SOCServer extends Server
                    }
                    }
                  */
-
                 //D.ebugPrintln("ga.isSeatVacant(mes.getPlayerNumber()) = "+ga.isSeatVacant(mes.getPlayerNumber()));
-
                 /**
                  * make sure a person isn't sitting here already
                  */
