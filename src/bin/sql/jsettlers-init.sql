@@ -19,9 +19,10 @@ CREATE TABLE users (
         password      VARCHAR(20), 
         email         VARCHAR(50), 
         lastlogin     DATE,
-        wins          SMALLINT DEFAULT 0,
-        losses        SMALLINT DEFAULT 0,
+        wins          INT      DEFAULT 0,
+        losses        INT      DEFAULT 0,
         face          SMALLINT DEFAULT 1,
+        totalpoints   INT      DEFAULT 0,
         PRIMARY KEY (nickname)
 );
 
@@ -58,9 +59,10 @@ CREATE TABLE robotparams (
         strategytype             INT, 
         starttime                TIMESTAMP, 
         endtime                  TIMESTAMP, 
-        gameswon                 INT, 
-        gameslost                INT, 
+        wins                     INT      DEFAULT 0, 
+        losses                   INT      DEFAULT 0, 
         tradeFlag                BOOL,
+        totalpoints              INT      DEFAULT 0,
         PRIMARY KEY (robotname)
 );
 
