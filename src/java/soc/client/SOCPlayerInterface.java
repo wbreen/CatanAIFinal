@@ -23,7 +23,6 @@ package soc.client;
 import soc.disableDebug.D;
 
 import soc.game.SOCGame;
-import soc.game.SOCPlayer;
 
 import java.awt.Color;
 import java.awt.Dimension;
