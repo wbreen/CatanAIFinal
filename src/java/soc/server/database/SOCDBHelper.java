@@ -35,6 +35,8 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 
 import java.util.Calendar;
+import java.util.Iterator;
+import java.util.Vector;
 
 
 /**
@@ -46,9 +48,9 @@ import java.util.Calendar;
  * @author Robert S. Thomas
  */
 /**
- * This code assumes that you're using mySQL as your database. The schema to
- * create a database for JSettlers can be found in the distribution
- * <code>$JSETTLERS/bin/sql/jsettlers-init.sql</code>.
+ * This code assumes that you're using mySQL as your database. The schema for
+ * JSettlers tables can be found in the distribution
+ * <code>$JSETTLERS/bin/sql/jsettlers-tables.sql</code>.
  */
 public class SOCDBHelper
 {
@@ -73,8 +75,6 @@ public class SOCDBHelper
     
     private static String HOST_QUERY =              "SELECT nickname FROM users WHERE ( users.host = ? );";
     
-    private static String HUMAN_ROW_COUNT =         "SELECT count(*) FROM users WHERE wins + losses > 0;";
-    
     private static String HUMAN_STATS_QUERY =       "SELECT nickname, wins, losses, totalpoints, totalpoints/(wins+losses) AS avg, 100 * (wins/(wins+losses)) AS pct FROM users WHERE (wins+losses) > 0 ORDER BY pct desc, avg desc, totalpoints desc;";
     
     private static String LASTLOGIN_UPDATE =        "UPDATE users SET lastlogin = ? WHERE nickname = ? ;";
@@ -84,8 +84,6 @@ public class SOCDBHelper
     private static String RESET_HUMAN_STATS =       "UPDATE users SET wins = 0, losses = 0, totalpoints = 0 WHERE nickname = ? AND password = ?;";
     
     private static String ROBOT_PARAMS_QUERY =      "SELECT * FROM robotparams WHERE robotname = ?;";
-    
-    private static String ROBOT_ROW_COUNT =         "SELECT count(*) FROM robotparams WHERE wins + losses > 0;";
     
     private static String ROBOT_STATS_QUERY =       "SELECT robotname, wins, losses, totalpoints, totalpoints/(wins+losses) AS avg, (100*(wins/(wins+losses))) AS pct FROM robotparams WHERE (wins+losses) > 0 ORDER BY pct desc, avg desc, totalpoints desc;";
     
@@ -136,8 +134,7 @@ public class SOCDBHelper
         }
         catch (ClassNotFoundException x)
         {
-            SQLException sx =
-                new SQLException("MySQL driver is unavailable");
+            SQLException sx = new SQLException("MySQL driver is unavailable");
             sx.initCause(x);
             throw sx;
         }
@@ -235,9 +232,7 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
 
@@ -278,9 +273,7 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
 
@@ -321,9 +314,7 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
 
@@ -371,9 +362,7 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
 
@@ -415,9 +404,7 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
 
@@ -455,9 +442,7 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
 
@@ -499,9 +484,7 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
 
@@ -580,9 +563,7 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
 
@@ -633,9 +614,7 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
 
@@ -653,106 +632,81 @@ public class SOCDBHelper
      */
     public static String[][] getStatistics(String type) throws SQLException
     {
-        int count = 0;
+        // this belongs elsewhere
+        final int STAT_COLUMNS = 7;
+
         String[][] statistics = null;
-        Statement stmt = connection.createStatement();
+        Statement stmt = null;
         
         // ensure that the JDBC connection is still valid
         if (checkConnection())
         {
             try
-            {                
-                // Get the expected number of rows in the result
+            {
+                Vector rows = new Vector();
+                ResultSet resultSet = null;
+                stmt = connection.createStatement();
+
+                // Execute the appropriate query
                 if (type.equals("robot"))
                 {
-                    try
-                    {
-                        ResultSet crs = stmt.executeQuery(ROBOT_ROW_COUNT);
-                        if (crs.next())
-                        {
-                            count = crs.getInt("count(*)");
-                        }
-                    }
-                    catch(Exception e)
-                    {
-                        System.out.println("SOC.server.database.SOCDBHelper.getStatistics - " +
-                                "Error getting count of " + type + "s: " + e);
-                    }
-                }
-                else if (type.equals("human"))
-                {
-                    try
-                    {
-                        ResultSet crs = stmt.executeQuery(HUMAN_ROW_COUNT);
-                        if (crs.next())
-                        {
-                            count = crs.getInt("count(*)");
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        System.out.println("SOC.server.database.SOCDBHelper.getStatistics - " +
-                                "Error getting count of " + type + "s: " + e);
-                    }
+                    resultSet = stmt.executeQuery(ROBOT_STATS_QUERY);
                 }
                 else
                 {
-                    System.err.println("SOCDBHelper.getStatistics - Unknown type: " + type);
-                    return statistics;
+                    resultSet = stmt.executeQuery(HUMAN_STATS_QUERY);
                 }
- 
-                if (count == 0)  // There is no data to return
+
+                while (resultSet.next())
                 {
-                    statistics = new String[1][1];
-                    statistics[0][0] = "None";
-                    return statistics;
-                }
-                else // There is data to return
-                {            
-                    ResultSet resultSet = null;
+                    String[] rowData = new String[STAT_COLUMNS];
                     
-                    // Create the array of statistics to return
-                    statistics = new String[count][7];
+                    rowData[0] = resultSet.getString(1);               // Name
+                    rowData[1] = Integer.toString(resultSet.getRow()); // Rank
+                    rowData[2] = resultSet.getString(2);               // Wins
+                    rowData[3] = resultSet.getString(3);               // Losses
+                    rowData[4] = resultSet.getString(4);               // Total Points
+                    rowData[5] = resultSet.getString(5);               // Average Points
+                    rowData[6] = resultSet.getString(6);               // Percent Wins
 
-                    // Execute the appropriate query
-                    if (type.equals("robot"))
-                    {
-                        resultSet = stmt.executeQuery(ROBOT_STATS_QUERY);
-                    }
-                    else
-                    {
-                        resultSet = stmt.executeQuery(HUMAN_STATS_QUERY);
-                    }
+                    rows.add(rowData);
+                }
+                resultSet.close();
 
-                    // Transfer results to statistics array
-                    for (int row = 0; row < count; row++)
-                    {
-                        if (resultSet.next())
-                        {
-                            // Add the six columns returned by the query
-                            statistics[row][0] = resultSet.getString(1);    // Name
-                            statistics[row][1] = Integer.toString(row + 1); // Rank
-                            statistics[row][2] = resultSet.getString(2);    // Wins
-                            statistics[row][3] = resultSet.getString(3);    // Losses
-                            statistics[row][4] = resultSet.getString(4);    // Total Points
-                            statistics[row][5] = resultSet.getString(5);    // Average Points
-                            statistics[row][6] = resultSet.getString(6);    // Percent Wins
-                        }
-                        else
-                        {
-                            System.err.println("SOCDBHelper.retrieveStats - Unexpected end of resultSet at row: " + row);
-                        }
-                    }
-                    resultSet.close();
+                if (rows.isEmpty() )
+                {
+                    String[] rowData = new String[STAT_COLUMNS];
+                    rowData[0] = "None";
+                    rows.add(rowData);
+                }
+                
+                // Create the array of statistics to return
+                statistics = new String[rows.size()][];
+                
+                int index = 0;
+                Iterator iter = rows.iterator();
+                while (iter.hasNext())
+                {
+                    statistics[index++] = (String[]) iter.next();
                 }
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
-        }        
+            finally
+            {
+                try
+                {
+                    if (stmt != null)
+                        stmt.close();
+                }
+                catch (SQLException sqlE)
+                {
+                    handleSQLException(sqlE);
+                }
+            }
+        }
         return statistics;
     }
     
@@ -798,12 +752,20 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
         return "Connection failed.";
+    }
+
+    /**
+     * Common behavior for SQL Exceptions.
+     */
+    private static void handleSQLException(SQLException x) throws SQLException
+    {
+        errorCondition = true;
+        x.printStackTrace();
+        throw x;
     }
 
     /**
@@ -831,17 +793,14 @@ public class SOCDBHelper
             }
             catch (SQLException sqlE)
             {
-                errorCondition = true;
-                sqlE.printStackTrace();
-                throw sqlE;
+                handleSQLException(sqlE);
             }
         }
     }
 
-    //-------------------------------------------------------------------
-    // dispResultSet
-    // Displays all columns and rows in the given result set
-    //-------------------------------------------------------------------
+    /**
+     * Useful for debugging. Leave commented out of final build.
+     *   /
     private static void dispResultSet(ResultSet rs) throws SQLException
     {
         System.out.println("dispResultSet()");
@@ -891,4 +850,5 @@ public class SOCDBHelper
             more = rs.next();
         }
     }
+    */
 }
