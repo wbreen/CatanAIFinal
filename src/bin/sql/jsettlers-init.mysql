@@ -19,6 +19,9 @@ CREATE TABLE users (
         password      VARCHAR(20), 
         email         VARCHAR(50), 
         lastlogin     DATE,
+        wins          SMALLINT DEFAULT 0,
+        losses        SMALLINT DEFAULT 0,
+        face          SMALLINT DEFAULT 1,
         PRIMARY KEY (nickname)
 );
 
@@ -35,10 +38,10 @@ CREATE TABLE games (
         player2       VARCHAR(20), 
         player3       VARCHAR(20), 
         player4       VARCHAR(20), 
-        score1        TINYINT, 
-        score2        TINYINT, 
-        score3        TINYINT, 
-        score4        TINYINT, 
+        score1        SMALLINT, 
+        score2        SMALLINT, 
+        score3        SMALLINT, 
+        score4        SMALLINT, 
         starttime     TIMESTAMP,
         PRIMARY KEY (gamename)
 );
