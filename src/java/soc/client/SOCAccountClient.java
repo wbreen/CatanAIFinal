@@ -28,6 +28,8 @@ import soc.message.SOCMessage;
 import soc.message.SOCRejectConnection;
 import soc.message.SOCStatusMessage;
 
+import soc.util.Version;
+
 import java.applet.Applet;
 import java.applet.AppletContext;
 
@@ -278,7 +280,8 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
      */
     public synchronized void init()
     {
-        System.out.println("SOC Account Client 0.1, (c) 2001 Robb Thomas.");
+        System.out.println("Java Settlers Account Client " + Version.version() +
+                           ", " + Version.copyright());
         System.out.println("Network layer based on code by Cristian Bogdan.");
 
         try // getting applet environment

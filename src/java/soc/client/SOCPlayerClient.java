@@ -95,6 +95,8 @@ import soc.message.SOCStatusMessage;
 import soc.message.SOCTextMsg;
 import soc.message.SOCTurn;
 
+import soc.util.Version;
+
 import java.applet.Applet;
 import java.applet.AppletContext;
 
@@ -446,7 +448,8 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
      */
     public synchronized void init()
     {
-        System.out.println("Catan Client 0.9, (c) 2001 Robb Thomas.");
+        System.out.println("Java Settlers Client " + Version.version() +
+                           ", " + Version.copyright());
         System.out.println("Network layer based on code by Cristian Bogdan.");
 
         try // getting applet environment
