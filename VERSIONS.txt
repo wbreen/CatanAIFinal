@@ -6,6 +6,7 @@
   line startup
 - fixed [bug 950989] which caused chat windows to wrap oddly, and
   removed extra blank always at bottom of chat text
+- source updated to compile on jdk 5.0 (Dave Brosius)
 
     > 1.0.6 (build 2004-xx-xx)
 
