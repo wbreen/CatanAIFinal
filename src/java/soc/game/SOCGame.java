@@ -368,6 +368,7 @@ public class SOCGame implements Serializable, Cloneable
     public void removePlayer(String name)
     {
         SOCPlayer pl = getPlayer(name);
+        pl.setName(null);
         seats[pl.getPlayerNumber()] = VACANT;
 
         //D.ebugPrintln("seats["+pl.getPlayerNumber()+"] = VACANT");
