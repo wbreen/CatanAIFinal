@@ -141,11 +141,6 @@ public class SOCServer extends Server
     private Random rand = new Random();
 
     /**
-     * The TCP port we listen on.
-     */
-    public int port;
-
-    /**
      * Maximum number of connections allowed
      */
     protected int maxConnections;
@@ -246,7 +241,6 @@ public class SOCServer extends Server
                                x.getMessage());
         }
 
-        port = p;
         startTime = System.currentTimeMillis();
         numberOfGamesStarted = 0;
         numberOfGamesFinished = 0;
@@ -1118,7 +1112,7 @@ public class SOCServer extends Server
      *
      * @param c  the connection
      */
-    public void leaveConnection(Connection c)
+    protected void leaveConnection(Connection c)
     {
         if (c != null)
         {
@@ -1137,7 +1131,7 @@ public class SOCServer extends Server
      *
      * @param c  the new Connection
      */
-    public void newConnection(Connection c)
+    protected void newConnection(Connection c)
     {
         if (c != null)
         {
@@ -1169,9 +1163,9 @@ public class SOCServer extends Server
                  * the same machine
                  */
                 boolean hostMatch = false;
-                Enumeration allConnections = this.getConnections();
 
                 /*
+                   Enumeration allConnections = getConnections();
                    while(allConnections.hasMoreElements()) {
                    Connection tempCon = (Connection)allConnections.nextElement();
                    if (!(c.host().equals("pippen")) && (tempCon.host().equals(c.host()))) {
@@ -1271,7 +1265,7 @@ public class SOCServer extends Server
      */
     private boolean checkNickname(String n)
     {
-        if (n.equals(SERVERNAME))
+        if (n.equalsIgnoreCase(SERVERNAME))
         {
             return false;
         }
@@ -1339,7 +1333,6 @@ public class SOCServer extends Server
                  */
                 case SOCMessage.LEAVEALL:
                     removeConnection(c);
-                    removeConnectionCleanup(c);
 
                     break;
 
@@ -1472,6 +1465,10 @@ public class SOCServer extends Server
                         {
                             giveDevCard(gameTextMsgMes.getText(), ga);
                         }
+                        else if (gameTextMsgMes.getText().startsWith("*STARTGAME*"))
+                        {
+                            handleSTARTGAME(c, new SOCStartGame(ga.getName()));
+                        }
                         else if (gameTextMsgMes.getText().startsWith("*KILLGAME*"))
                         {
                             messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), SERVERNAME, "********** " + (String) c.data + " KILLED THE GAME!!! **********"));
@@ -1497,7 +1494,7 @@ public class SOCServer extends Server
                             long seconds = (diff - (hours * 60 * 60 * 1000) - (minutes * 60 * 1000)) / 1000;
                             Runtime rt = Runtime.getRuntime();
                             messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), SERVERNAME, "> Uptime: " + hours + ":" + minutes + ":" + seconds));
-                            messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), SERVERNAME, "> Total connections: " + numberOfConnections));
+                            messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), SERVERNAME, "> Total connections: " + connectionCount()));
                             messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), SERVERNAME, "> Current connections: " + connectionCount()));
                             messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), SERVERNAME, "> Total Users: " + numberOfUsers));
                             messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), SERVERNAME, "> Games started: " + numberOfGamesStarted));
@@ -1575,7 +1572,6 @@ public class SOCServer extends Server
                                 {
                                     messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), SERVERNAME, "> DISCONNECTING " + botName));
                                     removeConnection(robotConn);
-                                    removeConnectionCleanup(robotConn);
 
                                     break;
                                 }
@@ -2473,7 +2469,7 @@ public class SOCServer extends Server
                              * boot the robot out of the game
                              */
                             Connection robotCon = null;
-                            Enumeration conEnum = conns.elements();
+                            Enumeration conEnum = getConnections();
 
                             while (conEnum.hasMoreElements())
                             {
@@ -3055,7 +3051,7 @@ public class SOCServer extends Server
                                 //  send all resource info for accuracy
                                 //
                                 Connection playerCon = null;
-                                Enumeration conEnum = conns.elements();
+                                Enumeration conEnum = getConnections();
 
                                 while (conEnum.hasMoreElements())
                                 {
@@ -4593,7 +4589,7 @@ public class SOCServer extends Server
 
             Connection peCon = null;
             Connection viCon = null;
-            Enumeration conEnum = conns.elements();
+            Enumeration conEnum = getConnections();
 
             while (conEnum.hasMoreElements())
             {
