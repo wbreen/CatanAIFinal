@@ -1366,14 +1366,10 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         gotPassword = true;
 
         SOCGame ga = new SOCGame(mes.getGame());
-
-        if (ga != null)
-        {
-            SOCPlayerInterface pi = new SOCPlayerInterface(mes.getGame(), this, ga);
-            pi.setVisible(true);
-            playerInterfaces.put(mes.getGame(), pi);
-            games.put(mes.getGame(), ga);
-        }
+        SOCPlayerInterface pi = new SOCPlayerInterface(mes.getGame(), this, ga);
+        pi.setVisible(true);
+        playerInterfaces.put(mes.getGame(), pi);
+        games.put(mes.getGame(), ga);
     }
 
     /**

@@ -725,11 +725,7 @@ public class SOCDisplaylessPlayerClient implements Runnable
         gotPassword = true;
 
         SOCGame ga = new SOCGame(mes.getGame());
-
-        if (ga != null)
-        {
-            games.put(mes.getGame(), ga);
-        }
+        games.put(mes.getGame(), ga);
     }
 
     /**
