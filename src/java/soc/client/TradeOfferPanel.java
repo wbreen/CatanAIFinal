@@ -26,6 +26,7 @@ import soc.game.SOCResourceSet;
 import soc.game.SOCTradeOffer;
 
 import java.awt.Button;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -42,8 +43,11 @@ import java.awt.event.ActionListener;
  * @author $author$
  * @version $Revision$
  */
-public class TradeOfferPanel extends Panel implements ActionListener
+public class TradeOfferPanel extends Panel
 {
+    public static final String OFFER_MODE = "offer";
+    public static final String MESSAGE_MODE = "message";
+    
     protected static final int[] zero = { 0, 0, 0, 0, 0 };
     static final String OFFER = "counter";
     static final String ACCEPT = "accept";
@@ -52,272 +56,333 @@ public class TradeOfferPanel extends Panel implements ActionListener
     static final String CLEAR = "clear";
     static final String CANCEL = "cancel";
     static final Color insideBGColor = new Color(255, 230, 162);
-    SpeechBalloon balloon;
-    Label toWhom1;
-    Label toWhom2;
-    String names1;
-    String names2;
-    Label giveLab;
-    Label getLab;
-    SquaresPanel squares;
-    Button offerBut;
-    Button acceptBut;
-    Button rejectBut;
-    ShadowedBox offerBox;
-    SquaresPanel offerSquares;
-    Label giveLab2;
-    Label getLab2;
-    Button sendBut;
-    Button clearBut;
-    Button cancelBut;
-    Label msg;
     int from;
     SOCHandPanel hp;
     SOCPlayerInterface pi;
-    boolean offered;
-    SOCResourceSet give;
-    SOCResourceSet get;
-    int[] giveInt = new int[5];
-    int[] getInt = new int[5];
-    boolean counterOfferMode = false;
+
+    String mode;
+    CardLayout cardLayout;
+    MessagePanel messagePanel;
+    OfferPanel offerPanel;
 
     /**
      * Creates a new TradeOfferPanel object.
      */
-    public TradeOfferPanel()
-    {
-        ;
-    }
-
-    /**
-     * Creates a new TradeOfferPanel object.
-     *
-     * @param hp DOCUMENT ME!
-     * @param from DOCUMENT ME!
-     * @param m DOCUMENT ME!
-     */
-    public TradeOfferPanel(SOCHandPanel hp, int from, String m)
+    public TradeOfferPanel(SOCHandPanel hp, int from)
     {
         this.hp = hp;
-        pi = hp.getPlayerInterface();
         this.from = from;
+        pi = hp.getPlayerInterface();
+
         setBackground(pi.getPlayerColor(from));
         setForeground(Color.black);
-        setFont(new Font("Helvetica", Font.PLAIN, 18));
 
-        msg = new Label(m, Label.CENTER);
-        msg.setBackground(insideBGColor);
-        add(msg);
-        balloon = new SpeechBalloon(pi.getPlayerColor(from));
-        add(balloon);
+        messagePanel = new MessagePanel();
+        offerPanel = new OfferPanel();
+        
+        cardLayout = new CardLayout();
+        setLayout(cardLayout);
 
-        offered = false;
-        setLayout(null);
+        add(messagePanel, MESSAGE_MODE); // first added = first shown
+        add(offerPanel, OFFER_MODE);
+        mode = MESSAGE_MODE;
     }
-
-    /**
-     * Creates a new TradeOfferPanel object.
-     *
-     * @param hp DOCUMENT ME!
-     * @param from DOCUMENT ME!
-     * @param give DOCUMENT ME!
-     * @param get DOCUMENT ME!
-     * @param offerList DOCUMENT ME!
-     */
-    public TradeOfferPanel(SOCHandPanel hp, int from, SOCResourceSet give, SOCResourceSet get, boolean[] offerList)
+    
+    private class MessagePanel extends Panel
     {
-        this.hp = hp;
-        pi = hp.getPlayerInterface();
-        this.from = from;
-        this.give = give;
-        this.get = get;
-        setBackground(pi.getPlayerColor(from));
-        setForeground(Color.black);
-        setFont(new Font("Helvetica", Font.PLAIN, 10));
-
-        SOCGame ga = hp.getGame();
-        SOCPlayer player = hp.getGame().getPlayer(hp.getClient().getNickname());
-
-        if (player != null)
-        {
-            offered = offerList[player.getPlayerNumber()];
-        }
-        else
-        {
-            offered = false;
-        }
-
-        int cnt = 0;
-        names1 = "Offered to: ";
-
-        for (; cnt < SOCGame.MAXPLAYERS; cnt++)
-        {
-            if (offerList[cnt])
-            {
-                names1 += ga.getPlayer(cnt).getName();
-
-                break;
-            }
-        }
-
-        cnt++;
-
-        int len = names1.length();
-
-        for (; cnt < SOCGame.MAXPLAYERS; cnt++)
-        {
-            if (offerList[cnt])
-            {
-                String name = ga.getPlayer(cnt).getName();
-                len += name.length();
-
-                if (len < 25)
-                {
-                    names1 += ", ";
-                    names1 += name;
-                }
-                else
-                {
-                    if (names2 == null)
-                    {
-                        names1 += ",";
-                        names2 = new String(name);
-                    }
-                    else
-                    {
-                        names2 += ", ";
-                        names2 += name;
-                    }
-                }
-            }
-        }
-
-        toWhom1 = new Label(names1);
-        toWhom1.setBackground(insideBGColor);
-        add(toWhom1);
-        toWhom2 = new Label(names2);
-        toWhom2.setBackground(insideBGColor);
-        add(toWhom2);
-        squares = new SquaresPanel(false);
-        add(squares);
-        giveLab = new Label("I Give: ");
-        giveLab.setBackground(insideBGColor);
-        add(giveLab);
-        getLab = new Label("I Get: ");
-        getLab.setBackground(insideBGColor);
-        add(getLab);
-
-        giveInt = new int[5];
-        getInt = new int[5];
+        SpeechBalloon balloon;
+        Label msg;
 
         /**
-         * Note: this only works if SOCResourceConstants.CLAY == 1
+         * Creates a new TradeOfferPanel object.
          */
-        for (int i = 0; i < 5; i++)
+        public MessagePanel()
         {
-            giveInt[i] = give.getAmount(i + 1);
-            getInt[i] = get.getAmount(i + 1);
+            setLayout(null);
+            setFont(new Font("Helvetica", Font.PLAIN, 18));
+        
+            msg = new Label(" ", Label.CENTER);
+            msg.setBackground(insideBGColor);
+            add(msg);
+        
+            balloon = new SpeechBalloon(pi.getPlayerColor(from));
+            add(balloon);
         }
-
-        if (offered)
+        
+        /**
+         * @param message message to display
+         */
+        public void update(String message)
         {
-            acceptBut = new Button("Accept");
-            add(acceptBut);
-            acceptBut.setActionCommand(ACCEPT);
-            acceptBut.addActionListener(this);
-
-            rejectBut = new Button("Reject");
-            add(rejectBut);
-            rejectBut.setActionCommand(REJECT);
-            rejectBut.addActionListener(this);
-
-            offerBut = new Button("Counter");
-            add(offerBut);
-            offerBut.setActionCommand(OFFER);
-            offerBut.addActionListener(this);
+            msg.setText(message);
         }
+        
+        /**
+         * Just for the message panel
+         */
+        public void doLayout()
+        {
+            // FontMetrics fm = this.getFontMetrics(this.getFont());
+            Dimension dim = getSize();
+            int w = Math.min(175, dim.width);
+            int h = Math.min(124, dim.height);
+            int inset = 10;
 
-        balloon = new SpeechBalloon(pi.getPlayerColor(from));
-        add(balloon);
-
-        setLayout(null);
+            msg.setBounds(inset, ((h - 18) / 2), w - (2 * inset), 18);
+            balloon.setBounds(0, 0, w, h);
+        }
     }
 
-    /**
-     * DOCUMENT ME!
-     */
-    public void doLayout()
+    private class OfferPanel extends Panel implements ActionListener
     {
-        FontMetrics fm = this.getFontMetrics(this.getFont());
-        Dimension dim = getSize();
-        int w = dim.width;
-        int h = dim.height;
-        int inset = 10;
+        SpeechBalloon balloon;
+        Label toWhom1;
+        Label toWhom2;
+        Label giveLab;
+        Label getLab;
 
-        if (w > 175)
+        SquaresPanel squares;
+        Button offerBut;
+        Button acceptBut;
+        Button rejectBut;
+        ShadowedBox offerBox;
+        SquaresPanel offerSquares;
+        Label giveLab2;
+        Label getLab2;
+        Button sendBut;
+        Button clearBut;
+        Button cancelBut;
+        boolean offered;
+        SOCResourceSet give;
+        SOCResourceSet get;
+        int[] giveInt = new int[5];
+        int[] getInt = new int[5];
+        boolean counterOfferMode = false;
+
+        /**
+         * Creates a new OfferPanel object.
+         */
+        public OfferPanel()
         {
-            w = 175;
+            setLayout(null);
+            setFont(new Font("Helvetica", Font.PLAIN, 10));
+
+            toWhom1 = new Label();
+            toWhom1.setBackground(insideBGColor);
+            add(toWhom1);
+
+            toWhom2 = new Label();
+            toWhom2.setBackground(insideBGColor);
+            add(toWhom2);
+
+            squares = new SquaresPanel(false);
+            add(squares);
+
+            giveLab = new Label("I Give: ");
+            giveLab.setBackground(insideBGColor);
+            add(giveLab);
+
+            getLab = new Label("I Get: ");
+            getLab.setBackground(insideBGColor);
+            add(getLab);
+
+            giveInt = new int[5];
+            getInt = new int[5];
+
+            acceptBut = new Button("Accept");
+            acceptBut.setActionCommand(ACCEPT);
+            acceptBut.addActionListener(this);
+            add(acceptBut);
+
+            rejectBut = new Button("Reject");
+            rejectBut.setActionCommand(REJECT);
+            rejectBut.addActionListener(this);
+            add(rejectBut);
+
+            offerBut = new Button("Counter");
+            offerBut.setActionCommand(OFFER);
+            offerBut.addActionListener(this);
+            add(offerBut);
+
+            sendBut = new Button("Send");
+            sendBut.setActionCommand(SEND);
+            sendBut.addActionListener(this);
+            sendBut.setVisible(false);
+            add(sendBut);
+
+            clearBut = new Button("Clear");
+            clearBut.setActionCommand(CLEAR);
+            clearBut.addActionListener(this);
+            clearBut.setVisible(false);
+            add(clearBut);
+
+            cancelBut = new Button("Cancel");
+            cancelBut.setActionCommand(CANCEL);
+            cancelBut.addActionListener(this);
+            cancelBut.setVisible(false);
+            add(cancelBut);
+
+            offerSquares = new SquaresPanel(true);
+            offerSquares.setVisible(false);
+            add(offerSquares);
+
+            giveLab2 = new Label("I Give: ");
+            giveLab2.setVisible(false);
+            add(giveLab2);
+
+            getLab2 = new Label("I Get: ");
+            getLab2.setVisible(false);
+            add(getLab2);
+
+            // correct the interior when we can get our player color
+            offerBox = new ShadowedBox(pi.getPlayerColor(from), Color.white);
+            offerBox.setVisible(false);
+            add(offerBox);
+
+            balloon = new SpeechBalloon(pi.getPlayerColor(from));
+            add(balloon);
         }
 
-        if (h > 124)
+        /**
+         * @param  give  the set of resources being given
+         * @param  get   the set of resources being asked for
+         * @param  to    a boolean array where 'true' means that the offer
+         *               is being made to the player with the same number as
+         *               the index of the 'true'
+         */
+        public void update(SOCTradeOffer offer)
         {
-            h = 124;
-        }
+            this.give = offer.getGiveSet();
+            this.get = offer.getGetSet();
+            boolean[] offerList = offer.getTo();
+        
+            SOCPlayer player = hp.getGame().getPlayer(hp.getClient().getNickname());
 
-        int top = (h / 8) + 5;
-
-        if (counterOfferMode)
-        {
-            // show the counter offer controls
-            if (h > 92)
+            if (player != null)
             {
-                h = 92;
-            }
-
-            top = (h / 8) + 5;
-
-            int lineH = 16;
-            int giveW = fm.stringWidth(new String("I Give: ")) + 2;
-            int buttonW = 48;
-            int buttonH = 18;
-
-            toWhom1.setBounds(inset, top, w - 20, 14);
-            toWhom2.setBounds(inset, top + 14, w - 20, 14);
-            giveLab.setBounds(inset, top + 32, giveW, lineH);
-            getLab.setBounds(inset, top + 32 + lineH, giveW, lineH);
-            squares.setLocation(inset + giveW, top + 32);
-            squares.doLayout();
-
-            int squaresHeight = squares.getBounds().height + 24;
-            giveLab2.setBounds(inset, top + 32 + squaresHeight, giveW, lineH);
-            getLab2.setBounds(inset, top + 32 + lineH + squaresHeight, giveW, lineH);
-            offerSquares.setLocation(inset + giveW, top + 32 + squaresHeight);
-            offerSquares.doLayout();
-
-            sendBut.setBounds(inset, top + 12 + (2 * squaresHeight), buttonW, buttonH);
-            clearBut.setBounds(inset + 5 + buttonW, top + 12 + (2 * squaresHeight), buttonW, buttonH);
-            cancelBut.setBounds(inset + (2 * (5 + buttonW)), top + 12 + (2 * squaresHeight), buttonW, buttonH);
-
-            balloon.setBounds(0, 0, w, h);
-            balloon.repaint();
-
-            offerBox.setBounds(0, top + 22 + squaresHeight, w, squaresHeight + 15);
-            offerBox.repaint();
-        }
-        else
-        {
-            if (msg != null)
-            {
-                // This is only a message
-                msg.setBounds(inset, ((h - 18) / 2), w - (2 * inset), 18);
-                balloon.setBounds(0, 0, w, h);
-                balloon.repaint();
+                Color ourPlayerColor = pi.getPlayerColor(player.getPlayerNumber());
+                giveLab2.setBackground(ourPlayerColor);
+                getLab2.setBackground(ourPlayerColor);
+                offerBox.setInterior(ourPlayerColor);
+                
+                offered = offerList[player.getPlayerNumber()];
             }
             else
             {
-                // This is an offer to trade
+                offered = false;
+            }
+        
+            SOCGame ga = hp.getGame();
+            String names1 = "Offered to: ";
+            String names2 = null;
+
+            int cnt = 0;
+
+            for (; cnt < SOCGame.MAXPLAYERS; cnt++)
+            {
+                if (offerList[cnt])
+                {
+                    names1 += ga.getPlayer(cnt).getName();
+
+                    break;
+                }
+            }
+
+            cnt++;
+
+            int len = names1.length();
+
+            for (; cnt < SOCGame.MAXPLAYERS; cnt++)
+            {
+                if (offerList[cnt])
+                {
+                    String name = ga.getPlayer(cnt).getName();
+                    len += name.length();
+                    
+                    if (len < 25)
+                    {
+                        names1 += ", ";
+                        names1 += name;
+                    }
+                    else
+                    {
+                        if (names2 == null)
+                        {
+                            names1 += ",";
+                            names2 = new String(name);
+                        }
+                        else
+                        {
+                            names2 += ", ";
+                            names2 += name;
+                        }
+                    }
+                }
+            }
+            toWhom1.setText(names1);
+            toWhom2.setText(names2);
+
+            /**
+             * Note: this only works if SOCResourceConstants.CLAY == 1
+             */
+            for (int i = 0; i < 5; i++)
+            {
+                giveInt[i] = give.getAmount(i + 1);
+                getInt[i] = get.getAmount(i + 1);
+            }
+            squares.setValues(giveInt, getInt);
+
+            // enables accept,reject,offer Buttons if 'offered' is true
+            setCounterOfferVisible(false);
+            validate();
+        }
+
+        /**
+         * DOCUMENT ME!
+         */
+        public void doLayout()
+        {
+            FontMetrics fm = this.getFontMetrics(this.getFont());
+            Dimension dim = getSize();
+            int w = Math.min(175, dim.width);
+            int h = Math.min(124, dim.height);
+            int inset = 10;
+            int top = (h / 8) + 5;
+
+            if (counterOfferMode)
+            {
+                // show the counter offer controls
+                h = Math.min(92, h);
+                top = (h / 8) + 5;
+                
                 int lineH = 16;
-                int giveW = fm.stringWidth(new String("I Give: ")) + 2;
+                int giveW = fm.stringWidth("I Give: ") + 2;
+                int buttonW = 48;
+                int buttonH = 18;
+
+                toWhom1.setBounds(inset, top, w - 20, 14);
+                toWhom2.setBounds(inset, top + 14, w - 20, 14);
+                giveLab.setBounds(inset, top + 32, giveW, lineH);
+                getLab.setBounds(inset, top + 32 + lineH, giveW, lineH);
+                squares.setLocation(inset + giveW, top + 32);
+
+                int squaresHeight = squares.getBounds().height + 24;
+                giveLab2.setBounds(inset, top + 32 + squaresHeight, giveW, lineH);
+                getLab2.setBounds(inset, top + 32 + lineH + squaresHeight, giveW, lineH);
+                offerSquares.setLocation(inset + giveW, top + 32 + squaresHeight);
+                offerSquares.doLayout();
+
+                sendBut.setBounds(inset, top + 12 + (2 * squaresHeight), buttonW, buttonH);
+                clearBut.setBounds(inset + 5 + buttonW, top + 12 + (2 * squaresHeight), buttonW, buttonH);
+                cancelBut.setBounds(inset + (2 * (5 + buttonW)), top + 12 + (2 * squaresHeight), buttonW, buttonH);
+
+                balloon.setBounds(0, 0, w, h);
+                offerBox.setBounds(0, top + 22 + squaresHeight, w, squaresHeight + 15);
+            }
+            else
+            {
+                int lineH = 16;
+                int giveW = fm.stringWidth("I Give: ") + 2;
                 int buttonW = 48;
                 int buttonH = 18;
 
@@ -327,7 +392,7 @@ public class TradeOfferPanel extends Panel implements ActionListener
                 getLab.setBounds(inset, top + 32 + lineH, giveW, lineH);
                 squares.setLocation(inset + giveW, top + 32);
                 squares.doLayout();
-
+                
                 if (offered)
                 {
                     int squaresHeight = squares.getBounds().height + 8;
@@ -337,200 +402,149 @@ public class TradeOfferPanel extends Panel implements ActionListener
                 }
 
                 balloon.setBounds(0, 0, w, h);
-                balloon.repaint();
-                squares.setValues(giveInt, getInt);
             }
+        }
+        /**
+         * DOCUMENT ME!
+         *
+         * @param e DOCUMENT ME!
+         */
+        public void actionPerformed(ActionEvent e)
+        {
+            String target = e.getActionCommand();
+
+            if (target == OFFER)
+            {
+                setCounterOfferVisible(true);
+            }
+            else if (target == CLEAR)
+            {
+                offerSquares.setValues(zero, zero);
+            }
+            else if (target == SEND)
+            {
+                SOCGame game = hp.getGame();
+                SOCPlayer player = game.getPlayer(pi.getClient().getNickname());
+
+                if (game.getGameState() == SOCGame.PLAY1)
+                {
+                    // slot for each resource, plus one for 'unknown' (remains 0)
+                    int[] give = new int[5];
+                    int[] get = new int[5];
+                    int giveSum = 0;
+                    int getSum = 0;
+                    offerSquares.getValues(give, get);
+                    
+                    for (int i = 0; i < 5; i++)
+                    {
+                        giveSum += give[i];
+                        getSum += get[i];
+                    }
+
+                    SOCResourceSet giveSet = new SOCResourceSet(give[0], give[1], give[2], give[3], give[4], 0);
+                    SOCResourceSet getSet = new SOCResourceSet(get[0], get[1], get[2], get[3], get[4], 0);
+                    
+                    if (!player.getResources().contains(giveSet))
+                    {
+                        pi.print("*** You can't offer what you don't have.");
+                    }
+                    else if ((giveSum == 0) || (getSum == 0))
+                    {
+                        pi.print("*** A trade must contain at least one resource card from each player.");
+                    }
+                    else
+                    {
+                        // arrays of bools are initially false
+                        boolean[] to = new boolean[SOCGame.MAXPLAYERS];
+                        // offer to the player that made the original offer
+                        to[from] = true;
+
+                        SOCTradeOffer tradeOffer =
+                            new SOCTradeOffer (game.getName(),
+                                               player.getPlayerNumber(),
+                                               to, giveSet, getSet);
+                        hp.getClient().offerTrade(game, tradeOffer);
+                        
+                        setCounterOfferVisible(true);
+                    }
+                }
+            }
+
+            if (target == CANCEL)
+            {
+                setCounterOfferVisible(false);
+            }
+
+            if (target == REJECT)
+            {
+                hp.getClient().rejectOffer(hp.getGame());
+
+                rejectBut.setVisible(false);
+            }
+
+            if (target == ACCEPT)
+            {
+                //int[] tempGive = new int[5];
+                //int[] tempGet = new int[5];
+                //squares.getValues(tempGive, tempGet);
+                hp.getClient().acceptOffer(hp.getGame(), from);
+            }
+        }
+        
+        private void setCounterOfferVisible(boolean visible)
+        {
+            giveLab2.setVisible(visible);
+            getLab2.setVisible(visible);
+            offerSquares.setVisible(visible);
+
+            sendBut.setVisible(visible);
+            clearBut.setVisible(visible);
+            cancelBut.setVisible(visible);
+            offerBox.setVisible(visible);
+
+            acceptBut.setVisible(offered && ! visible);
+            rejectBut.setVisible(offered && ! visible);
+            offerBut.setVisible(offered && ! visible);
+
+            counterOfferMode = visible;
+            validate();
         }
     }
 
     /**
-     * DOCUMENT ME!
+     * Switch to the Message from another player.
      *
-     * @param e DOCUMENT ME!
+     * @param  message  the message message to show
      */
-    public void actionPerformed(ActionEvent e)
+    public void setMessage(String message)
     {
-        String target = e.getActionCommand();
+        messagePanel.update(message);
+        cardLayout.show(this, mode = MESSAGE_MODE);
+        validate();
+    }
 
-        if (target == OFFER)
-        {
-            Color ourPlayerColor = pi.getPlayerColor(hp.getGame().getPlayer(pi.getClient().getNickname()).getPlayerNumber());
+    /**
+     * Update to view the of an offer from another player.
+     *
+     * @param  give  the set of resources being given
+     * @param  get   the set of resources being asked for
+     * @param  to    a boolean array where 'true' means that the offer
+     *               is being made to the player with the same number as
+     *               the index of the 'true'
+     */
+    public void setOffer(SOCTradeOffer currentOffer)
+    {
+        offerPanel.update(currentOffer);
+        cardLayout.show(this, mode = OFFER_MODE);
+        validate();
+    }
 
-            if (sendBut == null)
-            {
-                sendBut = new Button("Send");
-                add(sendBut);
-                sendBut.setActionCommand(SEND);
-                sendBut.addActionListener(this);
-            }
-            else
-            {
-                sendBut.setVisible(true);
-            }
-
-            if (clearBut == null)
-            {
-                clearBut = new Button("Clear");
-                add(clearBut);
-                clearBut.setActionCommand(CLEAR);
-                clearBut.addActionListener(this);
-            }
-            else
-            {
-                clearBut.setVisible(true);
-            }
-
-            if (cancelBut == null)
-            {
-                cancelBut = new Button("Cancel");
-                add(cancelBut);
-                cancelBut.setActionCommand(CANCEL);
-                cancelBut.addActionListener(this);
-            }
-            else
-            {
-                cancelBut.setVisible(true);
-            }
-
-            if (offerSquares == null)
-            {
-                offerSquares = new SquaresPanel(true);
-                add(offerSquares);
-            }
-            else
-            {
-                offerSquares.setVisible(true);
-            }
-
-            if (giveLab2 == null)
-            {
-                giveLab2 = new Label("I Give: ");
-                giveLab2.setBackground(ourPlayerColor);
-                add(giveLab2);
-            }
-            else
-            {
-                giveLab2.setVisible(true);
-            }
-
-            if (getLab2 == null)
-            {
-                getLab2 = new Label("I Get: ");
-                getLab2.setBackground(ourPlayerColor);
-                add(getLab2);
-            }
-            else
-            {
-                getLab2.setVisible(true);
-            }
-
-            acceptBut.setVisible(false);
-            rejectBut.setVisible(false);
-            offerBut.setVisible(false);
-
-            if (offerBox == null)
-            {
-                offerBox = new ShadowedBox(pi.getPlayerColor(from), ourPlayerColor);
-                add(offerBox);
-            }
-            else
-            {
-                offerBox.setVisible(true);
-            }
-
-            counterOfferMode = true;
-            doLayout();
-        }
-
-        if (target == CLEAR)
-        {
-            offerSquares.setValues(zero, zero);
-        }
-
-        if (target == SEND)
-        {
-            SOCGame game = hp.getGame();
-            SOCPlayer ourPlayerData = game.getPlayer(pi.getClient().getNickname());
-
-            if (game.getGameState() == SOCGame.PLAY1)
-            {
-                int[] give = new int[5];
-                int[] get = new int[5];
-                int giveSum = 0;
-                int getSum = 0;
-                offerSquares.getValues(give, get);
-
-                for (int i = 0; i < 5; i++)
-                {
-                    giveSum += give[i];
-                    getSum += get[i];
-                }
-
-                SOCResourceSet giveSet = new SOCResourceSet(give[0], give[1], give[2], give[3], give[4], 0);
-                SOCResourceSet getSet = new SOCResourceSet(get[0], get[1], get[2], get[3], get[4], 0);
-
-                if (!ourPlayerData.getResources().contains(giveSet))
-                {
-                    pi.print("*** You can't offer what you don't have.");
-                }
-                else if ((giveSum == 0) || (getSum == 0))
-                {
-                    pi.print("*** A trade must contain at least one resource card from each player.");
-                }
-                else
-                {
-                    boolean[] to = new boolean[SOCGame.MAXPLAYERS];
-
-                    for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
-                    {
-                        to[i] = false;
-                    }
-
-                    // offer to the player that made the original offer						
-                    to[from] = true;
-
-                    SOCTradeOffer tradeOffer = new SOCTradeOffer(game.getName(), ourPlayerData.getPlayerNumber(), to, giveSet, getSet);
-                    hp.getClient().offerTrade(game, tradeOffer);
-                    remove(offerBox);
-                    remove(getLab2);
-                    remove(giveLab2);
-                    remove(offerSquares);
-                    remove(clearBut);
-                    remove(sendBut);
-                    remove(cancelBut);
-                }
-            }
-        }
-
-        if (target == CANCEL)
-        {
-            giveLab2.setVisible(false);
-            getLab2.setVisible(false);
-            offerSquares.setVisible(false);
-            sendBut.setVisible(false);
-            clearBut.setVisible(false);
-            cancelBut.setVisible(false);
-            offerBox.setVisible(false);
-
-            acceptBut.setVisible(true);
-            rejectBut.setVisible(true);
-            offerBut.setVisible(true);
-            counterOfferMode = false;
-            doLayout();
-        }
-
-        if (target == REJECT)
-        {
-            rejectBut.setVisible(false);
-            hp.getClient().rejectOffer(hp.getGame());
-        }
-
-        if (target == ACCEPT)
-        {
-            int[] tempGive = new int[5];
-            int[] tempGet = new int[5];
-            squares.getValues(tempGive, tempGet);
-            hp.getClient().acceptOffer(hp.getGame(), from);
-        }
+    /**
+     * Returns current mode of <code>TradeOfferPanel.OFFER_MODE</code>, or
+     * <code>TradeOfferPanel.MESSAGE_MODE</code>, which has been set by using
+     * {@link #setOffer} or {@link #setMessage}
+     */
+    public String getMode() {
+        return mode;
     }
 }
