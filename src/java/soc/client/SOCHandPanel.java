@@ -649,7 +649,7 @@ public class SOCHandPanel extends Panel implements ActionListener
         lroadLab.setVisible(false);
 
         if (game.getPlayer(client.getNickname()) == null &&
-            game.getGameState() == game.NEW)
+            game.getGameState() == SOCGame.NEW)
        {
            sitBut.setVisible(true);
        }
@@ -732,7 +732,7 @@ public class SOCHandPanel extends Panel implements ActionListener
             D.ebugPrintln("SOCHandPanel.addPlayer: This is our hand");
 
             // show 'Victory Points' and hide "Start Button" if game in progress
-            if (game.getGameState() == game.NEW)
+            if (game.getGameState() == SOCGame.NEW)
             {
                 startBut.setVisible(true);
             }
