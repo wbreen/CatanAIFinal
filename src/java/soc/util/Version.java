@@ -88,7 +88,7 @@ public class Version {
   }
 
   /** Check for sufficient version of the JRE. */
-  static boolean isJREValid () {
+  public static boolean isJREValid () {
     String v = System.getProperty("java.vm.version");
     int major = Integer.parseInt (v.substring (0,1));
     int minor = Integer.parseInt (v.substring (2,3));
