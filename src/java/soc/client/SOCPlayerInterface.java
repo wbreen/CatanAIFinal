@@ -36,8 +36,8 @@ import java.awt.TextArea;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 
 import java.util.StringTokenizer;
 
@@ -47,7 +47,7 @@ import java.util.StringTokenizer;
  *
  * @author Robert S. Thomas
  */
-public class SOCPlayerInterface extends Frame implements ActionListener, WindowListener
+public class SOCPlayerInterface extends Frame implements ActionListener
 {
     /**
      * the board display
@@ -168,8 +168,9 @@ public class SOCPlayerInterface extends Frame implements ActionListener, WindowL
         /**
          * more initialization stuff
          */
-        setSize(660, (2 * SOCBoardPanel.getPanelY()) + 16 + 160);
         setLocation(50, 50);
+        setSize(660, 600);
+        validate();
     }
 
     /**
@@ -234,26 +235,16 @@ public class SOCPlayerInterface extends Frame implements ActionListener, WindowL
         add(textInput);
         textInput.addActionListener(this);
 
-        this.addWindowListener(this);
+        addWindowListener(new MyWindowAdapter());
     }
 
     /**
-     * the update method
+     * Overriden so the peer isn't painted, which clears background. Don't call
+     * this directly, use {@link Component#repaint()} instead.
      */
     public void update(Graphics g)
     {
         paint(g);
-    }
-
-    /**
-     * the init method
-     */
-    public void init()
-    {
-        pack();
-        resize(660, 600);
-        setVisible(true);
-        doLayout();
     }
 
     /**
@@ -337,72 +328,6 @@ public class SOCPlayerInterface extends Frame implements ActionListener, WindowL
     {
         client.leaveGame(game);
         dispose();
-    }
-
-    /** when the window is destroyed, tell the applet to leave the group */
-    public void windowOpened(WindowEvent e)
-    {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param e DOCUMENT ME!
-     */
-    public void windowClosed(WindowEvent e)
-    {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param e DOCUMENT ME!
-     */
-    public void windowIconified(WindowEvent e)
-    {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param e DOCUMENT ME!
-     */
-    public void windowDeiconified(WindowEvent e)
-    {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param e DOCUMENT ME!
-     */
-    public void windowActivated(WindowEvent e)
-    {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param e DOCUMENT ME!
-     */
-    public void windowDeactivated(WindowEvent e)
-    {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param e DOCUMENT ME!
-     */
-    public void windowClosing(WindowEvent e)
-    {
-        leaveGame();
     }
 
     /**
@@ -525,7 +450,6 @@ public class SOCPlayerInterface extends Frame implements ActionListener, WindowL
                 if (game.getPlayer(i).isRobot())
                 {
                     hands[i].addSeatLockBut();
-                    hands[i].doLayout();
                 }
             }
         }
@@ -568,12 +492,7 @@ public class SOCPlayerInterface extends Frame implements ActionListener, WindowL
     {
         for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
         {
-            SOCPlayer pl = game.getPlayer(i);
-
-            if ((pl != null) && (pl.getName() != null) && (pl.getName().equals(client.getNickname())))
-            {
-                hands[i].removeStartBut();
-            }
+            hands[i].removeStartBut();
         }
     }
 
@@ -677,9 +596,17 @@ public class SOCPlayerInterface extends Frame implements ActionListener, WindowL
         nrows = (cdh / fm.getHeight()) - 1;
 
         //chatDisplay.setMaximumLines(nrows);
-        if (boardPanel != null)
+        boardPanel.doLayout();
+    }
+
+    private class MyWindowAdapter extends WindowAdapter
+    {
+        /**
+         * Leave the game when the window closes.
+         */
+        public void windowClosing(WindowEvent e)
         {
-            boardPanel.forceRedraw();
+            leaveGame();
         }
     }
 }
