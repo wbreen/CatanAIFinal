@@ -3036,11 +3036,11 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
             fr.print("* Ignoring " + name);
             fr.print("* Ignore list:");
 
-            Enumeration enum = ignoreList.elements();
+            Enumeration ignoreEnum = ignoreList.elements();
 
-            while (enum.hasMoreElements())
+            while (ignoreEnum.hasMoreElements())
             {
-                String s = (String) enum.nextElement();
+                String s = (String) ignoreEnum.nextElement();
                 fr.print("* " + s);
             }
 
@@ -3053,11 +3053,11 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
             fr.print("* Unignoring " + name);
             fr.print("* Ignore list:");
 
-            Enumeration enum = ignoreList.elements();
+            Enumeration ignoreEnum = ignoreList.elements();
 
-            while (enum.hasMoreElements())
+            while (ignoreEnum.hasMoreElements())
             {
-                String s = (String) enum.nextElement();
+                String s = (String) ignoreEnum.nextElement();
                 fr.print("* " + s);
             }
 
@@ -3085,11 +3085,11 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
             pi.print("* Ignoring " + name);
             pi.print("* Ignore list:");
 
-            Enumeration enum = ignoreList.elements();
+            Enumeration ignoreEnum = ignoreList.elements();
 
-            while (enum.hasMoreElements())
+            while (ignoreEnum.hasMoreElements())
             {
-                String s = (String) enum.nextElement();
+                String s = (String) ignoreEnum.nextElement();
                 pi.print("* " + s);
             }
 
@@ -3102,11 +3102,11 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
             pi.print("* Unignoring " + name);
             pi.print("* Ignore list:");
 
-            Enumeration enum = ignoreList.elements();
+            Enumeration ignoreEnum = ignoreList.elements();
 
-            while (enum.hasMoreElements())
+            while (ignoreEnum.hasMoreElements())
             {
-                String s = (String) enum.nextElement();
+                String s = (String) ignoreEnum.nextElement();
                 pi.print("* " + s);
             }
 
@@ -3174,11 +3174,11 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         D.ebugPrintln("onIgnoreList |" + name + "|");
 
         boolean result = false;
-        Enumeration enum = ignoreList.elements();
+        Enumeration ignoreEnum = ignoreList.elements();
 
-        while (enum.hasMoreElements())
+        while (ignoreEnum.hasMoreElements())
         {
-            String s = (String) enum.nextElement();
+            String s = (String) ignoreEnum.nextElement();
             D.ebugPrintln("comparing |" + s + "| to |" + name + "|");
 
             if (s.equals(name))

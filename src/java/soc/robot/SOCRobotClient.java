@@ -704,11 +704,11 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
 
                 if (record != null)
                 {
-                    Enumeration enum = record.elements();
+                    Enumeration planEnum = record.elements();
 
-                    while (enum.hasMoreElements())
+                    while (planEnum.hasMoreElements())
                     {
-                        String str = (String) enum.nextElement();
+                        String str = (String) planEnum.nextElement();
                         sendText(ga, str);
                     }
                 }
@@ -726,11 +726,11 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
 
                 if (record != null)
                 {
-                    Enumeration enum = record.elements();
+                    Enumeration resEnum = record.elements();
 
-                    while (enum.hasMoreElements())
+                    while (resEnum.hasMoreElements())
                     {
-                        String str = (String) enum.nextElement();
+                        String str = (String) resEnum.nextElement();
                         sendText(ga, str);
                     }
                 }
@@ -748,11 +748,11 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
                 if (record != null)
                 {
                     SOCGame ga = (SOCGame) games.get(mes.getGame());
-                    Enumeration enum = record.elements();
+                    Enumeration planEnum = record.elements();
 
-                    while (enum.hasMoreElements())
+                    while (planEnum.hasMoreElements())
                     {
-                        String str = (String) enum.nextElement();
+                        String str = (String) planEnum.nextElement();
                         sendText(ga, str);
                     }
                 }
@@ -770,11 +770,11 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
                 if (record != null)
                 {
                     SOCGame ga = (SOCGame) games.get(mes.getGame());
-                    Enumeration enum = record.elements();
+                    Enumeration resEnum = record.elements();
 
-                    while (enum.hasMoreElements())
+                    while (resEnum.hasMoreElements())
                     {
-                        String str = (String) enum.nextElement();
+                        String str = (String) resEnum.nextElement();
                         sendText(ga, str);
                     }
                 }
@@ -821,11 +821,11 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
                     if (record != null)
                     {
                         SOCGame ga = (SOCGame) games.get(mes.getGame());
-                        Enumeration enum = record.elements();
+                        Enumeration locEnum = record.elements();
 
-                        while (enum.hasMoreElements())
+                        while (locEnum.hasMoreElements())
                         {
-                            String str = (String) enum.nextElement();
+                            String str = (String) locEnum.nextElement();
                             sendText(ga, str);
                         }
                     }
@@ -864,11 +864,11 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
                 if (record != null)
                 {
                     SOCGame ga = (SOCGame) games.get(mes.getGame());
-                    Enumeration enum = record.elements();
+                    Enumeration locEnum = record.elements();
 
-                    while (enum.hasMoreElements())
+                    while (locEnum.hasMoreElements())
                     {
-                        String str = (String) enum.nextElement();
+                        String str = (String) locEnum.nextElement();
                         sendText(ga, str);
                     }
                 }
@@ -915,11 +915,11 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
                     if (record != null)
                     {
                         SOCGame ga = (SOCGame) games.get(mes.getGame());
-                        Enumeration enum = record.elements();
+                        Enumeration locEnum = record.elements();
 
-                        while (enum.hasMoreElements())
+                        while (locEnum.hasMoreElements())
                         {
-                            String str = (String) enum.nextElement();
+                            String str = (String) locEnum.nextElement();
                             sendText(ga, str);
                         }
                     }
@@ -958,11 +958,11 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
                 if (record != null)
                 {
                     SOCGame ga = (SOCGame) games.get(mes.getGame());
-                    Enumeration enum = record.elements();
+                    Enumeration locEnum = record.elements();
 
-                    while (enum.hasMoreElements())
+                    while (locEnum.hasMoreElements())
                     {
-                        String str = (String) enum.nextElement();
+                        String str = (String) locEnum.nextElement();
                         sendText(ga, str);
                     }
                 }

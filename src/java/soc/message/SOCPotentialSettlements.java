@@ -107,11 +107,11 @@ public class SOCPotentialSettlements extends SOCMessage
     public static String toCmd(String ga, int pn, Vector ps)
     {
         String cmd = POTENTIALSETTLEMENTS + sep + ga + sep2 + pn;
-        Enumeration enum = ps.elements();
+        Enumeration psEnum = ps.elements();
 
-        while (enum.hasMoreElements())
+        while (psEnum.hasMoreElements())
         {
-            Integer number = (Integer) enum.nextElement();
+            Integer number = (Integer) psEnum.nextElement();
             cmd += (sep2 + number);
         }
 
@@ -156,11 +156,11 @@ public class SOCPotentialSettlements extends SOCMessage
     public String toString()
     {
         String s = "SOCPotentialSettlements:game=" + game + "|playerNum=" + playerNumber + "|list=";
-        Enumeration enum = psList.elements();
+        Enumeration psEnum = psList.elements();
 
-        while (enum.hasMoreElements())
+        while (psEnum.hasMoreElements())
         {
-            Integer number = (Integer) enum.nextElement();
+            Integer number = (Integer) psEnum.nextElement();
             s += (Integer.toHexString(number.intValue()) + " ");
         }
 

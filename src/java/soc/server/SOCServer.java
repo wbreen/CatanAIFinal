@@ -829,11 +829,11 @@ public class SOCServer extends Server
 
             if (v != null)
             {
-                Enumeration enum = v.elements();
+                Enumeration memberEnum = v.elements();
 
-                while (enum.hasMoreElements())
+                while (memberEnum.hasMoreElements())
                 {
-                    Connection c = (Connection) enum.nextElement();
+                    Connection c = (Connection) memberEnum.nextElement();
 
                     if (c != null)
                     {
@@ -865,11 +865,11 @@ public class SOCServer extends Server
 
         if (v != null)
         {
-            Enumeration enum = v.elements();
+            Enumeration memberEnum = v.elements();
 
-            while (enum.hasMoreElements())
+            while (memberEnum.hasMoreElements())
             {
-                Connection c = (Connection) enum.nextElement();
+                Connection c = (Connection) memberEnum.nextElement();
 
                 if (c != null)
                 {
@@ -911,11 +911,11 @@ public class SOCServer extends Server
             if (v != null)
             {
                 //D.ebugPrintln("M2G - "+mes);
-                Enumeration enum = v.elements();
+                Enumeration memberEnum = v.elements();
 
-                while (enum.hasMoreElements())
+                while (memberEnum.hasMoreElements())
                 {
-                    Connection c = (Connection) enum.nextElement();
+                    Connection c = (Connection) memberEnum.nextElement();
 
                     if (c != null)
                     {
@@ -949,11 +949,11 @@ public class SOCServer extends Server
         if (v != null)
         {
             //D.ebugPrintln("M2G - "+mes);
-            Enumeration enum = v.elements();
+            Enumeration memberEnum = v.elements();
 
-            while (enum.hasMoreElements())
+            while (memberEnum.hasMoreElements())
             {
-                Connection c = (Connection) enum.nextElement();
+                Connection c = (Connection) memberEnum.nextElement();
 
                 if (c != null)
                 {
@@ -983,11 +983,11 @@ public class SOCServer extends Server
             if (v != null)
             {
                 //D.ebugPrintln("M2GE - "+mes);
-                Enumeration enum = v.elements();
+                Enumeration memberEnum = v.elements();
 
-                while (enum.hasMoreElements())
+                while (memberEnum.hasMoreElements())
                 {
-                    Connection con = (Connection) enum.nextElement();
+                    Connection con = (Connection) memberEnum.nextElement();
 
                     if ((con != null) && (!ex.contains(con)))
                     {
