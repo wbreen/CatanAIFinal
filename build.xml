@@ -16,8 +16,8 @@
   <property name="Name"      value="JSettlers" />
   <!-- version under development, e.g. 1.1, 1.2-RC2, 2.0-SNAPSHOT -->
   <property name="version"   value="1.0.4-SNAPSHOT" />
-  <property name="copyright" value="2003-2004 Robert S. Thomas" />
-  <property name="url"       value="http://sf.net/projects/jsettlers" />
+  <property name="copyright" value="2001-2004 Robert S. Thomas" />
+  <property name="url"       value="http://sourceforge.net/projects/jsettlers" />
 
   <!-- **** See build.properties for client/server startup arguments **** -->
   <property name="client.class"   value="soc.client.SOCPlayerClient" />
