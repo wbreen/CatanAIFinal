@@ -78,6 +78,8 @@ public class SOCHandPanel extends Panel implements ActionListener
     protected static final String SEND = "Send";
     protected static final String BANK = "Bank/Port";
     protected static final String CARD = "  Play Card  ";
+    protected static final String GIVE = "I Give: ";
+    protected static final String GET = "I Get: ";
     protected Button sitBut;
     protected Button robotBut;
     protected Button startBut;
@@ -89,8 +91,6 @@ public class SOCHandPanel extends Panel implements ActionListener
     protected ColorSquare vpSq;
     protected Label larmyLab;
     protected Label lroadLab;
-    protected boolean larmy;
-    protected boolean lroad;
     protected ColorSquare claySq;
     protected ColorSquare oreSq;
     protected ColorSquare sheepSq;
@@ -113,7 +113,7 @@ public class SOCHandPanel extends Panel implements ActionListener
     protected Label developmentLab;
     protected ColorSquare knightsSq;
     protected Label knightsLab;
-    protected Label cardLab;
+    //protected Label cardLab; // no longer used?
     protected List cardList;
     protected Button playCardBut;
     protected SquaresPanel sqPanel;
@@ -148,7 +148,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public SOCHandPanel(SOCPlayerInterface pi, SOCPlayer pl, boolean in)
     {
-        super();
+        super(null);
         creation(pi, pl, in);
     }
 
@@ -160,8 +160,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public SOCHandPanel(SOCPlayerInterface pi, SOCPlayer pl)
     {
-        super();
-        creation(pi, pl, true);
+        this(pi, pl, true);
     }
 
     /**
@@ -183,32 +182,180 @@ public class SOCHandPanel extends Panel implements ActionListener
         setForeground(Color.black);
         setFont(new Font("Helvetica", Font.PLAIN, 10));
 
-        vpSq = null;
-        larmyLab = null;
-        lroadLab = null;
-        claySq = null;
-        oreSq = null;
-        sheepSq = null;
-        wheatSq = null;
-        woodSq = null;
-        settlementSq = null;
-        roadSq = null;
-        citySq = null;
-        resourceSq = null;
-        developmentSq = null;
-        knightsSq = null;
-        cardList = null;
-        seatLockBut = null;
+        faceImg = new SOCFaceButton(playerInterface, player.getPlayerNumber());
+        add(faceImg);
 
-        larmy = false;
-        lroad = false;
+        pname = new Label();
+        pname.setFont(new Font("Serif", Font.PLAIN, 14));
+        add(pname);
 
-        /**
-         * player hasn't sat down yet
-         */
-        inPlay = false;
+        startBut = new Button(START);
+        startBut.addActionListener(this);
+        // this button always enabled
+        add(startBut);
 
-        setLayout(null);
+        vpLab = new Label("Points: ");
+        add(vpLab);
+        vpSq = new ColorSquare(ColorSquare.GREY, 0);
+        add(vpSq);
+        
+        larmyLab = new Label("", Label.CENTER);
+        larmyLab.setForeground(new Color(142, 45, 10));
+        add(larmyLab);
+        
+        lroadLab = new Label("", Label.CENTER);
+        lroadLab.setForeground(new Color(142, 45, 10));
+        add(lroadLab);
+        
+        clayLab = new Label("Clay:");
+        add(clayLab);
+        claySq = new ColorSquare(ColorSquare.CLAY, 0);
+        add(claySq);
+
+        oreLab = new Label("Ore:");
+        add(oreLab);
+        oreSq = new ColorSquare(ColorSquare.ORE, 0);
+        add(oreSq);
+
+        sheepLab = new Label("Sheep:");
+        add(sheepLab);
+        sheepSq = new ColorSquare(ColorSquare.SHEEP, 0);
+        add(sheepSq);
+        
+        wheatLab = new Label("Wheat:");
+        add(wheatLab);
+        wheatSq = new ColorSquare(ColorSquare.WHEAT, 0);
+        add(wheatSq);
+
+        woodLab = new Label("Wood:");
+        add(woodLab);
+        woodSq = new ColorSquare(ColorSquare.WOOD, 0);
+        add(woodSq);
+
+        //cardLab = new Label("Cards:");
+        //add(cardLab);
+        cardList = new List(0, false);
+        add(cardList);
+
+        roadSq = new ColorSquare(ColorSquare.GREY, 0);
+        add(roadSq);
+        roadLab = new Label("Roads:");
+        add(roadLab);
+
+        settlementSq = new ColorSquare(ColorSquare.GREY, 0);
+        add(settlementSq);
+        settlementLab = new Label("Stlmts:");
+        add(settlementLab);
+  
+        citySq = new ColorSquare(ColorSquare.GREY, 0);
+        add(citySq);
+        cityLab = new Label("Cities:");
+        add(cityLab);
+
+        knightsLab = new Label("Knights: ");
+        add(knightsLab);
+        knightsSq = new ColorSquare(ColorSquare.GREY, 0);
+        add(knightsSq);
+
+        resourceLab = new Label("Resources: ");
+        add(resourceLab);
+        resourceSq = new ColorSquare(ColorSquare.GREY, 0);
+        add(resourceSq);
+
+        developmentLab = new Label("Dev. Cards: ");
+        add(developmentLab);
+        developmentSq = new ColorSquare(ColorSquare.GREY, 0);
+        add(developmentSq);
+        
+        seatLockBut = new Button(UNLOCKSEAT);
+        seatLockBut.addActionListener(this);
+        seatLockBut.setEnabled(interactive);
+        add(seatLockBut);
+
+        takeOverBut = new Button(TAKEOVER);
+        takeOverBut.addActionListener(this);
+        takeOverBut.setEnabled(interactive);
+        add(takeOverBut);
+
+        sitBut = new Button(SIT);
+        sitBut.addActionListener(this);
+        sitBut.setEnabled(interactive);
+        add(sitBut);
+
+        robotBut = new Button(ROBOT);
+        robotBut.addActionListener(this);
+        robotBut.setEnabled(interactive);
+        add(robotBut);
+
+        playCardBut = new Button(CARD);
+        playCardBut.addActionListener(this);
+        playCardBut.setEnabled(interactive);
+        add(playCardBut);
+        
+        giveLab = new Label(GIVE);
+        add(giveLab);
+        
+        getLab = new Label(GET);
+        add(getLab);
+
+        sqPanel = new SquaresPanel(interactive);
+        add(sqPanel);
+        sqPanel.setVisible(false); // else it's visible in all (dunno why?)
+        
+        sendBut = new Button(SEND);
+        sendBut.addActionListener(this);
+        sendBut.setEnabled(interactive);
+        add(sendBut);
+        
+        clearBut = new Button(CLEAR);
+        clearBut.addActionListener(this);
+        clearBut.setEnabled(interactive);
+        add(clearBut);
+        
+        bankBut = new Button(BANK);
+        bankBut.addActionListener(this);
+        bankBut.setEnabled(interactive);
+        add(bankBut);
+
+        playerSend = new ColorSquare[SOCGame.MAXPLAYERS-1];
+        playerSendMap = new int[SOCGame.MAXPLAYERS-1];
+
+        // set the trade buttons correctly
+        int cnt = 0;
+        for (int pn = 0; pn < SOCGame.MAXPLAYERS; pn++)
+        {
+            if (pn != player.getPlayerNumber())
+            {
+                Color color = playerInterface.getPlayerColor(pn);
+                playerSendMap[cnt] = pn;
+                playerSend[cnt] = new ColorSquare(ColorSquare.CHECKBOX, true, color);
+                playerSend[cnt].setColor(playerInterface.getPlayerColor(pn));
+                playerSend[cnt].setBoolValue(true);
+                add(playerSend[cnt]);
+                cnt++;
+            }
+        }
+
+        rollBut = new Button(ROLL);
+        rollBut.addActionListener(this);
+        rollBut.setEnabled(interactive);
+        add(rollBut);
+        
+        doneBut = new Button(DONE);
+        doneBut.addActionListener(this);
+        doneBut.setEnabled(interactive);
+        add(doneBut);
+
+        quitBut = new Button(QUIT);
+        quitBut.addActionListener(this);
+        quitBut.setEnabled(interactive);
+        add(quitBut);
+
+        offer = new TradeOfferPanel(this, player.getPlayerNumber());
+        offer.setVisible(false);
+        add(offer);
+        // set the starting state of the panel
+        removePlayer();
     }
 
     /**
@@ -342,12 +489,8 @@ public class SOCHandPanel extends Panel implements ActionListener
                 }
                 else
                 {
+                    // bool array elements begin as false
                     boolean[] to = new boolean[SOCGame.MAXPLAYERS];
-
-                    for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
-                    {
-                        to[i] = false;
-                    }
 
                     if (game.getCurrentPlayerNumber() == player.getPlayerNumber())
                     {
@@ -365,7 +508,10 @@ public class SOCHandPanel extends Panel implements ActionListener
                         to[game.getCurrentPlayerNumber()] = true;
                     }
 
-                    SOCTradeOffer tradeOffer = new SOCTradeOffer(game.getName(), player.getPlayerNumber(), to, giveSet, getSet);
+                    SOCTradeOffer tradeOffer =
+                        new SOCTradeOffer(game.getName(),
+                                          player.getPlayerNumber(),
+                                          to, giveSet, getSet);
                     client.offerTrade(game, tradeOffer);
                 }
             }
@@ -375,15 +521,8 @@ public class SOCHandPanel extends Panel implements ActionListener
             String item;
             int itemNum;
 
-            try
-            {
-                item = cardList.getSelectedItem();
-                itemNum = cardList.getSelectedIndex();
-            }
-            catch (NullPointerException ex)
-            {
-                return;
-            }
+            item = cardList.getSelectedItem();
+            itemNum = cardList.getSelectedIndex();
 
             if (item.length() == 0)
             {
@@ -432,31 +571,18 @@ public class SOCHandPanel extends Panel implements ActionListener
         D.ebugPrintln("*** addSeatLockBut() ***");
         D.ebugPrintln("seatLockBut = " + seatLockBut);
 
-        if (seatLockBut == null)
-        {
             if (game.isSeatLocked(player.getPlayerNumber()))
             {
-                seatLockBut = new Button(UNLOCKSEAT);
+                seatLockBut.setLabel(UNLOCKSEAT);
             }
             else
             {
-                seatLockBut = new Button(LOCKSEAT);
+                seatLockBut.setLabel(UNLOCKSEAT);
             }
 
-            add(seatLockBut);
-
-            if (interactive)
-            {
-                seatLockBut.addActionListener(this);
-            }
-
-            D.ebugPrintln("added");
-        }
-        else
-        {
             seatLockBut.setVisible(true);
-            D.ebugPrintln("visable");
-        }
+
+            //seatLockBut.repaint();
     }
 
     /**
@@ -464,13 +590,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void addTakeOverBut()
     {
-        takeOverBut = new Button("Take over");
-        add(takeOverBut);
-
-        if (interactive)
-        {
-            takeOverBut.addActionListener(this);
-        }
+        takeOverBut.setVisible(true);        
     }
 
     /**
@@ -478,15 +598,10 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void addSitButton()
     {
-        sitBut = new Button("Sit Here");
-        add(sitBut);
-
-        if (interactive)
+        if (player.getName() == null)
         {
-            sitBut.addActionListener(this);
+            sitBut.setVisible(true);
         }
-
-        doLayout();
     }
 
     /**
@@ -494,15 +609,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void addRobotButton()
     {
-        robotBut = new Button("Robot");
-        add(robotBut);
-
-        if (interactive)
-        {
-            robotBut.addActionListener(this);
-        }
-
-        doLayout();
+        robotBut.setVisible(true);
     }
 
     /**
@@ -512,11 +619,9 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void changeFace(int id)
     {
-        if (faceImg != null)
-        {
-            faceImg.setFace(id);
-        }
+        faceImg.setFace(id);
     }
+
 
     /**
      * remove this player
@@ -525,84 +630,75 @@ public class SOCHandPanel extends Panel implements ActionListener
     {
         //D.ebugPrintln("REMOVE PLAYER");
         //D.ebugPrintln("NAME = "+player.getName());
-        remove(vpLab);
-        remove(vpSq);
-        remove(faceImg);
-        remove(pname);
-        remove(roadSq);
-        remove(roadLab);
-        remove(settlementLab);
-        remove(settlementSq);
-        remove(cityLab);
-        remove(citySq);
-        remove(knightsSq);
-        remove(knightsLab);
+        vpLab.setVisible(false);
+        vpSq.setVisible(false);
+        faceImg.setVisible(false);
+        pname.setVisible(false);
+        roadSq.setVisible(false);
+        roadLab.setVisible(false);
+        settlementLab.setVisible(false);
+        settlementSq.setVisible(false);
+        cityLab.setVisible(false);
+        citySq.setVisible(false);
+        knightsSq.setVisible(false);
+        knightsLab.setVisible(false);
 
-        if ((offer != null) && (offer.msg != null))
+        offer.setVisible(false);
+
+        larmyLab.setVisible(false);
+        lroadLab.setVisible(false);
+
+        if (game.getPlayer(client.getNickname()) == null &&
+            game.getGameState() == game.NEW)
+       {
+           sitBut.setVisible(true);
+       }
+
+        /* This is our hand */
+        claySq.setVisible(false);
+        clayLab.setVisible(false);
+        oreSq.setVisible(false);
+        oreLab.setVisible(false);
+        sheepSq.setVisible(false);
+        sheepLab.setVisible(false);
+        wheatSq.setVisible(false);
+        wheatLab.setVisible(false);
+        woodSq.setVisible(false);
+        woodLab.setVisible(false);
+            
+        //cardLab.setVisible(false);
+        cardList.setVisible(false);
+        playCardBut.setVisible(false);
+
+        giveLab.setVisible(false);
+        getLab.setVisible(false);
+        sqPanel.setVisible(false);
+        sendBut.setVisible(false);
+        clearBut.setVisible(false);
+        bankBut.setVisible(false);
+
+        for (int i = 0; i < (SOCGame.MAXPLAYERS - 1); i++)
         {
-            remove(offer);
-            offer = null;
+            playerSend[i].setVisible(false);
         }
 
-        if (larmy)
-        {
-            remove(larmyLab);
-        }
+        rollBut.setVisible(false);
+        doneBut.setVisible(false);
+        quitBut.setVisible(false);
 
-        if (lroad)
-        {
-            remove(lroadLab);
-        }
-
-        if (player.getName().equals(client.getNickname()))
-        {
-            /* This is our hand */
-            remove(claySq);
-            remove(clayLab);
-            remove(oreSq);
-            remove(oreLab);
-            remove(sheepSq);
-            remove(sheepLab);
-            remove(wheatSq);
-            remove(wheatLab);
-            remove(woodSq);
-            remove(woodLab);
-            remove(cardLab);
-            remove(cardList);
-            remove(playCardBut);
-            remove(giveLab);
-            remove(getLab);
-            remove(sqPanel);
-            remove(sendBut);
-            remove(clearBut);
-            remove(bankBut);
-
-            for (int i = 0; i < (SOCGame.MAXPLAYERS - 1); i++)
-            {
-                remove(playerSend[i]);
-            }
-
-            remove(rollBut);
-            remove(doneBut);
-            remove(quitBut);
-        }
-        else
-        {
-            /*
-             * other player's hand
-             */
-            remove(resourceLab);
-            remove(resourceSq);
-            remove(developmentLab);
-            remove(developmentSq);
-        }
+        /* other player's hand */
+        resourceLab.setVisible(false);
+        resourceSq.setVisible(false);
+        developmentLab.setVisible(false);
+        developmentSq.setVisible(false);
 
         removeTakeOverBut();
         removeSeatLockBut();
 
         inPlay = false;
 
-        doLayout();
+        validate();
+        repaint();
     }
 
     /**
@@ -612,163 +708,71 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void addPlayer(String name)
     {
-        /* when the player sits add this stuff */
-        larmyLab = new Label("L. Army", Label.CENTER);
-        larmyLab.setForeground(new Color(142, 45, 10));
-        lroadLab = new Label("L. Road", Label.CENTER);
-        lroadLab.setForeground(new Color(142, 45, 10));
+        /* This is visible for both our hand and opponent hands */
+        faceImg.setDefaultFace();
+        faceImg.setVisible(true);
 
-        faceImg = new SOCFaceButton(playerInterface, player.getPlayerNumber());
+        pname.setText(name);
+        pname.setVisible(true);
 
-        add(faceImg);
+        larmyLab.setVisible(true);
+        lroadLab.setVisible(true);
 
-        pname = new Label(name);
-        pname.setFont(new Font("Serif", Font.PLAIN, 14));
-        add(pname);
+        roadSq.setVisible(true);
+        roadLab.setVisible(true);
+        settlementSq.setVisible(true);
+        settlementLab.setVisible(true);
+        citySq.setVisible(true);
+        cityLab.setVisible(true);
+        knightsLab.setVisible(true);
+        knightsSq.setVisible(true);
 
-        roadSq = new ColorSquare(ColorSquare.GREY, 0);
-        add(roadSq);
-        roadLab = new Label("Roads:");
-        add(roadLab);
-
-        settlementSq = new ColorSquare(ColorSquare.GREY, 0);
-        add(settlementSq);
-        settlementLab = new Label("Stlmts:");
-        add(settlementLab);
-
-        citySq = new ColorSquare(ColorSquare.GREY, 0);
-        add(citySq);
-        cityLab = new Label("Cities:");
-        add(cityLab);
-
-        knightsLab = new Label("Knights: ");
-        add(knightsLab);
-        knightsSq = new ColorSquare(ColorSquare.GREY, 0);
-        add(knightsSq);
-
-        //if (true) {
         if (player.getName().equals(client.getNickname()))
         {
-            /* This is our hand */
-            if (game.getGameState() != SOCGame.NEW)
+            D.ebugPrintln("SOCHandPanel.addPlayer: This is our hand");
+
+            // show 'Victory Points' and hide "Start Button" if game in progress
+            if (game.getGameState() == game.NEW)
             {
-                vpLab = new Label("Points: ");
-                add(vpLab);
-                vpSq = new ColorSquare(ColorSquare.GREY, 0);
-                add(vpSq);
+                startBut.setVisible(true);
             }
-
-            claySq = new ColorSquare(ColorSquare.CLAY, 0);
-            add(claySq);
-            clayLab = new Label("Clay:");
-            add(clayLab);
-
-            oreSq = new ColorSquare(ColorSquare.ORE, 0);
-            add(oreSq);
-            oreLab = new Label("Ore:");
-            add(oreLab);
-
-            sheepSq = new ColorSquare(ColorSquare.SHEEP, 0);
-            add(sheepSq);
-            sheepLab = new Label("Sheep:");
-            add(sheepLab);
-
-            wheatSq = new ColorSquare(ColorSquare.WHEAT, 0);
-            add(wheatSq);
-            wheatLab = new Label("Wheat:");
-            add(wheatLab);
-
-            woodSq = new ColorSquare(ColorSquare.WOOD, 0);
-            add(woodSq);
-            woodLab = new Label("Wood:");
-            add(woodLab);
-
-            cardLab = new Label("Cards:");
-            add(cardLab);
-
-            cardList = new List(0, false);
-            add(cardList);
-
-            playCardBut = new Button(CARD);
-            add(playCardBut);
-
-            if (interactive)
+            else
             {
-                playCardBut.addActionListener(this);
+                vpLab.setVisible(true);
+                vpSq.setVisible(true);
             }
+            
+            claySq.setVisible(true);
+            clayLab.setVisible(true);
+            oreSq.setVisible(true);
+            oreLab.setVisible(true);
+            sheepSq.setVisible(true);
+            sheepLab.setVisible(true);
+            wheatSq.setVisible(true);
+            wheatLab.setVisible(true);
+            woodSq.setVisible(true);
+            woodLab.setVisible(true);
 
-            giveLab = new Label("I Give: ");
-            add(giveLab);
-            getLab = new Label("I Get: ");
-            add(getLab);
-            sqPanel = new SquaresPanel(interactive);
-            add(sqPanel);
-            sendBut = new Button(SEND);
-            add(sendBut);
+            //cardLab.setVisible(true);
+            cardList.setVisible(true);
+            playCardBut.setVisible(true);
 
-            if (interactive)
+            giveLab.setVisible(true);
+            getLab.setVisible(true);
+            sqPanel.setVisible(true);
+
+            sendBut.setVisible(true);
+            clearBut.setVisible(true);
+            bankBut.setVisible(true);
+
+            for (int i = 0; i < (SOCGame.MAXPLAYERS - 1); i++)
             {
-                sendBut.addActionListener(this);
+                playerSend[i].setBoolValue(true);
+                playerSend[i].setVisible(true);
             }
-
-            clearBut = new Button(CLEAR);
-            add(clearBut);
-
-            if (interactive)
-            {
-                clearBut.addActionListener(this);
-            }
-
-            bankBut = new Button(BANK);
-            add(bankBut);
-
-            if (interactive)
-            {
-                bankBut.addActionListener(this);
-            }
-
-            playerSend = new ColorSquare[3];
-            playerSendMap = new int[3];
-
-            int cnt = 0;
-
-            for (int pn = 0; pn < SOCGame.MAXPLAYERS; pn++)
-            {
-                SOCPlayer pl = game.getPlayer(pn);
-
-                if ((pl.getName() == null) || (!pl.getName().equals(client.getNickname())))
-                {
-                    playerSend[cnt] = new ColorSquare(ColorSquare.CHECKBOX, true, playerInterface.getPlayerColor(pn));
-                    playerSendMap[cnt] = pn;
-                    add(playerSend[cnt]);
-                    playerSend[cnt].setBoolValue(true);
-                    cnt++;
-                }
-            }
-
-            rollBut = new Button(ROLL);
-            add(rollBut);
-
-            if (interactive)
-            {
-                rollBut.addActionListener(this);
-            }
-
-            doneBut = new Button(DONE);
-            add(doneBut);
-
-            if (interactive)
-            {
-                doneBut.addActionListener(this);
-            }
-
-            quitBut = new Button(QUIT);
-            add(quitBut);
-
-            if (interactive)
-            {
-                quitBut.addActionListener(this);
-            }
+            rollBut.setVisible(true);
+            doneBut.setVisible(true);
+            quitBut.setVisible(true);
 
             // Remove all of the sit and take over buttons. 
             for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
@@ -776,22 +780,11 @@ public class SOCHandPanel extends Panel implements ActionListener
                 playerInterface.getPlayerHandPanel(i).removeSitBut();
                 playerInterface.getPlayerHandPanel(i).removeTakeOverBut();
             }
-
-            // If we haven't started yet, add the 'Start' button.
-            if (game.getGameState() == SOCGame.NEW)
-            {
-                startBut = new Button(START);
-                add(startBut);
-
-                if (interactive)
-                {
-                    startBut.addActionListener(this);
-                }
-            }
         }
         else
         {
             /* This is another player's hand */
+
             D.ebugPrintln("**** SOCHandPanel.addPlayer(name) ****");
             D.ebugPrintln("player.getPlayerNumber() = " + player.getPlayerNumber());
             D.ebugPrintln("player.isRobot() = " + player.isRobot());
@@ -812,20 +805,13 @@ public class SOCHandPanel extends Panel implements ActionListener
                 removeSeatLockBut();
             }
 
-            vpLab = new Label("Points: ");
-            add(vpLab);
-            vpSq = new ColorSquare(ColorSquare.GREY, 0);
-            add(vpSq);
+            vpLab.setVisible(true);
+            vpSq.setVisible(true);
 
-            resourceLab = new Label("Resources: ");
-            add(resourceLab);
-            resourceSq = new ColorSquare(ColorSquare.GREY, 0);
-            add(resourceSq);
-
-            developmentLab = new Label("Dev. Cards: ");
-            add(developmentLab);
-            developmentSq = new ColorSquare(ColorSquare.GREY, 0);
-            add(developmentSq);
+            resourceLab.setVisible(true);
+            resourceSq.setVisible(true);
+            developmentLab.setVisible(true);
+            developmentSq.setVisible(true);
 
             removeSitBut();
             removeRobotBut();
@@ -833,7 +819,8 @@ public class SOCHandPanel extends Panel implements ActionListener
 
         inPlay = true;
 
-        doLayout();
+        validate();
+        repaint();
     }
 
     /**
@@ -841,137 +828,47 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void updateDevCards()
     {
-        if (cardList != null)
+        SOCDevCardSet cards = player.getDevCards();
+
+        int[] cardTypes = { SOCDevCardConstants.DISC,
+                            SOCDevCardConstants.KNIGHT,
+                            SOCDevCardConstants.MONO,
+                            SOCDevCardConstants.ROADS,
+                            SOCDevCardConstants.CAP,
+                            SOCDevCardConstants.LIB,
+                            SOCDevCardConstants.TEMP,
+                            SOCDevCardConstants.TOW,
+                            SOCDevCardConstants.UNIV };
+        String[] cardNames = {"Discovery",
+                              "Knight",
+                              "Monopoly",
+                              "Road Building",
+                              "Capitol (1VP)",
+                              "Library (1VP)",
+                              "Temple (1VP)",
+                              "Tower (1VP)",
+                              "University (1VP)"};
+
+        synchronized (cardList.getTreeLock())
         {
-            int i;
-            SOCDevCardSet cards = player.getDevCards();
-
             cardList.removeAll();
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.OLD, SOCDevCardConstants.DISC);
-                    i++)
+            
+            // add items to the list for each new and old card, of each type
+            for (int i = 0; i < cardTypes.length; i++)
             {
-                cardList.add("Discovery");
-            }
+                int numOld = cards.getAmount(SOCDevCardSet.OLD, cardTypes[i]);
+                int numNew = cards.getAmount(SOCDevCardSet.NEW, cardTypes[i]);
 
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.NEW, SOCDevCardConstants.DISC);
-                    i++)
-            {
-                cardList.add("*NEW* Discovery");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.OLD, SOCDevCardConstants.KNIGHT);
-                    i++)
-            {
-                cardList.add("Knight");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.NEW, SOCDevCardConstants.KNIGHT);
-                    i++)
-            {
-                cardList.add("*NEW* Knight");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.OLD, SOCDevCardConstants.MONO);
-                    i++)
-            {
-                cardList.add("Monopoly");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.NEW, SOCDevCardConstants.MONO);
-                    i++)
-            {
-                cardList.add("*NEW* Monopoly");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.OLD, SOCDevCardConstants.ROADS);
-                    i++)
-            {
-                cardList.add("Road Building");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.NEW, SOCDevCardConstants.ROADS);
-                    i++)
-            {
-                cardList.add("*NEW* Road Building");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.OLD, SOCDevCardConstants.CAP);
-                    i++)
-            {
-                cardList.add("Capitol (1VP)");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.NEW, SOCDevCardConstants.CAP);
-                    i++)
-            {
-                cardList.add("Capitol (1VP)");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.OLD, SOCDevCardConstants.LIB);
-                    i++)
-            {
-                cardList.add("Library (1VP)");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.NEW, SOCDevCardConstants.LIB);
-                    i++)
-            {
-                cardList.add("Library (1VP)");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.OLD, SOCDevCardConstants.TEMP);
-                    i++)
-            {
-                cardList.add("Temple (1VP)");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.NEW, SOCDevCardConstants.TEMP);
-                    i++)
-            {
-                cardList.add("Temple (1VP)");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.OLD, SOCDevCardConstants.TOW);
-                    i++)
-            {
-                cardList.add("Tower (1VP)");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.NEW, SOCDevCardConstants.TOW);
-                    i++)
-            {
-                cardList.add("Tower (1VP)");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.OLD, SOCDevCardConstants.UNIV);
-                    i++)
-            {
-                cardList.add("University (1VP)");
-            }
-
-            for (i = 0;
-                    i < cards.getAmount(SOCDevCardSet.NEW, SOCDevCardConstants.UNIV);
-                    i++)
-            {
-                cardList.add("University (1VP)");
+                for (int j = 0; j < numOld; j++)
+                {
+                    cardList.add(cardNames[i]);
+                }
+                for (int j = 0; j < numNew; j++)
+                {
+                    // VP cards (starting at 4) are valid immidiately
+                    String prefix = (i < 4) ? "*NEW* " : "";
+                    cardList.add(prefix + cardNames[i]);
+                }
             }
         }
     }
@@ -981,10 +878,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void removeSeatLockBut()
     {
-        if (seatLockBut != null)
-        {
-            seatLockBut.setVisible(false);
-        }
+        seatLockBut.setVisible(false);
     }
 
     /**
@@ -992,12 +886,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void removeTakeOverBut()
     {
-        if (takeOverBut != null)
-        {
-            remove(takeOverBut);
-            takeOverBut.removeActionListener(this);
-            takeOverBut = null;
-        }
+        takeOverBut.setVisible(false);
     }
 
     /**
@@ -1005,12 +894,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void removeSitBut()
     {
-        if (sitBut != null)
-        {
-            remove(sitBut);
-            sitBut.removeActionListener(this);
-            sitBut = null;
-        }
+        sitBut.setVisible(false);
     }
 
     /**
@@ -1018,28 +902,22 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void removeRobotBut()
     {
-        if (robotBut != null)
-        {
-            remove(robotBut);
-            robotBut.removeActionListener(this);
-        }
+        robotBut.setVisible(false);
     }
 
     /**
-     * DOCUMENT ME!
+     * Internal mechanism to remove start button (if visible) and add VP label.
+     *
+     * @param started has game been started?
      */
     public void removeStartBut()
     {
-        vpLab = new Label("Points: ");
-        add(vpLab);
-        vpSq = new ColorSquare(ColorSquare.GREY, 0);
-        add(vpSq);
+        vpLab.setVisible(true);
+        vpSq.setVisible(true);
 
-        remove(startBut);
-        startBut.removeActionListener(this);
-        doLayout();
+        startBut.setVisible(false);
     }
-
+    
     /**
      * DOCUMENT ME!
      */
@@ -1047,20 +925,13 @@ public class SOCHandPanel extends Panel implements ActionListener
     {
         if (inPlay)
         {
-            if (offer != null)
-            {
-                remove(offer);
-                offer = null;
-                doLayout();
-            }
-
             SOCTradeOffer currentOffer = player.getCurrentOffer();
 
             if (currentOffer != null)
             {
-                offer = new TradeOfferPanel(this, player.getPlayerNumber(), currentOffer.getGiveSet(), currentOffer.getGetSet(), currentOffer.getTo());
-                add(offer);
-                doLayout();
+                offer.setOffer(currentOffer);
+                offer.setVisible(true);
+                offer.repaint();
             }
             else
             {
@@ -1074,16 +945,10 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void rejectOffer()
     {
-        if (offer != null)
-        {
-            remove(offer);
-            offer = null;
-            doLayout();
-        }
-
-        offer = new TradeOfferPanel(this, player.getPlayerNumber(), "No thanks.");
-        add(offer);
-        doLayout();
+        offer.setMessage("No thanks.");
+        offer.setVisible(true);
+        //validate();
+        repaint();
     }
 
     /**
@@ -1091,11 +956,10 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void clearTradeMsg()
     {
-        if ((offer != null) && (offer.msg != null))
+        if (offer.getMode() == TradeOfferPanel.MESSAGE_MODE)
         {
-            remove(offer);
-            offer = null;
-            doLayout();
+            offer.setVisible(false);
+            repaint();
         }
     }
 
@@ -1104,12 +968,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void clearOffer()
     {
-        if (offer != null)
-        {
-            remove(offer);
-            offer = null;
-            doLayout();
-        }
+        offer.setVisible(false);
 
         if (player.getName().equals(client.getNickname()))
         {
@@ -1122,6 +981,8 @@ public class SOCHandPanel extends Panel implements ActionListener
                 playerSend[i].setBoolValue(true);
             }
         }
+        validate();
+        repaint();
     }
 
     /**
@@ -1130,16 +991,14 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void updateTakeOverButton()
     {
-        if (takeOverBut != null)
+        if ((!game.isSeatLocked(player.getPlayerNumber())) &&
+            (game.getCurrentPlayerNumber() != player.getPlayerNumber()))
         {
-            if ((!game.isSeatLocked(player.getPlayerNumber())) && (game.getCurrentPlayerNumber() != player.getPlayerNumber()))
-            {
-                takeOverBut.setLabel(TAKEOVER);
-            }
-            else
-            {
-                takeOverBut.setLabel("* Seat Locked *");
-            }
+            takeOverBut.setLabel(TAKEOVER);
+        }
+        else
+        {
+            takeOverBut.setLabel("* Seat Locked *");
         }
     }
 
@@ -1150,16 +1009,13 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     public void updateSeatLockButton()
     {
-        if (seatLockBut != null)
+        if (game.isSeatLocked(player.getPlayerNumber()))
         {
-            if (game.isSeatLocked(player.getPlayerNumber()))
-            {
-                seatLockBut.setLabel(UNLOCKSEAT);
-            }
-            else
-            {
-                seatLockBut.setLabel(LOCKSEAT);
-            }
+            seatLockBut.setLabel(UNLOCKSEAT);
+        }
+        else
+        {
+            seatLockBut.setLabel(LOCKSEAT);
         }
     }
 
@@ -1170,21 +1026,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     protected void setLArmy(boolean haveIt)
     {
-        if (haveIt != larmy)
-        {
-            if (haveIt)
-            {
-                add(larmyLab);
-            }
-            else
-            {
-                remove(larmyLab);
-            }
-
-            larmy = haveIt;
-        }
-
-        doLayout();
+        larmyLab.setText(haveIt ? "L. Army" : "");
     }
 
     /**
@@ -1194,21 +1036,7 @@ public class SOCHandPanel extends Panel implements ActionListener
      */
     protected void setLRoad(boolean haveIt)
     {
-        if (haveIt != lroad)
-        {
-            if (haveIt)
-            {
-                add(lroadLab);
-            }
-            else
-            {
-                remove(lroadLab);
-            }
-
-            lroad = haveIt;
-        }
-
-        doLayout();
+        lroadLab.setText(haveIt ? "L. Road" : "");
     }
 
     /**
@@ -1228,134 +1056,88 @@ public class SOCHandPanel extends Panel implements ActionListener
         {
         case VICTORYPOINTS:
 
-            if (vpSq != null)
-            {
-                vpSq.setIntValue(player.getTotalVP());
-            }
+            vpSq.setIntValue(player.getTotalVP());
 
             break;
 
         case LONGESTROAD:
 
-            if (lroadLab != null)
-            {
-                setLRoad(player.hasLongestRoad());
-                doLayout();
-            }
+            setLRoad(player.hasLongestRoad());
 
             break;
 
         case LARGESTARMY:
 
-            if (larmyLab != null)
-            {
-                setLArmy(player.hasLargestArmy());
-                doLayout();
-            }
+            setLArmy(player.hasLargestArmy());
 
             break;
 
         case CLAY:
 
-            if (claySq != null)
-            {
-                claySq.setIntValue(player.getResources().getAmount(SOCResourceConstants.CLAY));
-            }
+            claySq.setIntValue(player.getResources().getAmount(SOCResourceConstants.CLAY));
 
             break;
 
         case ORE:
 
-            if (oreSq != null)
-            {
-                oreSq.setIntValue(player.getResources().getAmount(SOCResourceConstants.ORE));
-            }
+            oreSq.setIntValue(player.getResources().getAmount(SOCResourceConstants.ORE));
 
             break;
 
         case SHEEP:
 
-            if (sheepSq != null)
-            {
-                sheepSq.setIntValue(player.getResources().getAmount(SOCResourceConstants.SHEEP));
-            }
+            sheepSq.setIntValue(player.getResources().getAmount(SOCResourceConstants.SHEEP));
 
             break;
 
         case WHEAT:
 
-            if (wheatSq != null)
-            {
-                wheatSq.setIntValue(player.getResources().getAmount(SOCResourceConstants.WHEAT));
-            }
+            wheatSq.setIntValue(player.getResources().getAmount(SOCResourceConstants.WHEAT));
 
             break;
 
         case WOOD:
 
-            if (woodSq != null)
-            {
-                woodSq.setIntValue(player.getResources().getAmount(SOCResourceConstants.WOOD));
-            }
+            woodSq.setIntValue(player.getResources().getAmount(SOCResourceConstants.WOOD));
 
             break;
 
         case NUMRESOURCES:
 
-            if (resourceSq != null)
-            {
-                resourceSq.setIntValue(player.getResources().getTotal());
-            }
+            resourceSq.setIntValue(player.getResources().getTotal());
 
             break;
 
         case ROADS:
 
-            if (roadSq != null)
-            {
-                roadSq.setIntValue(player.getNumPieces(SOCPlayingPiece.ROAD));
-            }
+            roadSq.setIntValue(player.getNumPieces(SOCPlayingPiece.ROAD));
 
             break;
 
         case SETTLEMENTS:
 
-            if (settlementSq != null)
-            {
-                settlementSq.setIntValue(player.getNumPieces(SOCPlayingPiece.SETTLEMENT));
-            }
+            settlementSq.setIntValue(player.getNumPieces(SOCPlayingPiece.SETTLEMENT));
 
             break;
 
         case CITIES:
 
-            if (citySq != null)
-            {
-                citySq.setIntValue(player.getNumPieces(SOCPlayingPiece.CITY));
-            }
+            citySq.setIntValue(player.getNumPieces(SOCPlayingPiece.CITY));
 
             break;
 
         case NUMDEVCARDS:
 
-            if (developmentSq != null)
-            {
-                developmentSq.setIntValue(player.getDevCards().getTotal());
-            }
+            developmentSq.setIntValue(player.getDevCards().getTotal());
 
             break;
 
         case NUMKNIGHTS:
 
-            if (knightsSq != null)
-            {
-                knightsSq.setIntValue(player.getNumKnights());
-            }
+            knightsSq.setIntValue(player.getNumKnights());
 
             break;
         }
-
-        // doLayout();
     }
 
     /**
@@ -1371,66 +1153,50 @@ public class SOCHandPanel extends Panel implements ActionListener
         {
             /* just show the 'sit' button */
             /* and the 'robot' button     */
-            if (sitBut != null)
-            {
-                sitBut.setBounds((dim.width - 60) / 2, (dim.height - 82) / 2, 60, 40);
-            }
+            sitBut.setBounds((dim.width - 60) / 2, (dim.height - 82) / 2, 60, 40);
         }
         else
         {
             FontMetrics fm = this.getFontMetrics(this.getFont());
             int lineH = ColorSquare.HEIGHT;
-            int stlmtsW = fm.stringWidth(new String("Stlmts: "));
-            int knightsW = fm.stringWidth(new String("Knights: "));
+            int stlmtsW = fm.stringWidth("Stlmts: ");
+            int knightsW = fm.stringWidth("Knights: ");
             int faceW = 40;
             int pnameW = dim.width - (inset + faceW + inset + inset);
 
             faceImg.setBounds(inset, inset, faceW, faceW);
-            faceImg.draw();
             pname.setBounds(inset + faceW + inset, inset, pnameW, lineH);
 
             //if (true) {
             if (player.getName().equals(client.getNickname()))
             {
                 /* This is our hand */
-                sqPanel.doLayout();
+                //sqPanel.doLayout();
 
                 Dimension sqpDim = sqPanel.getSize();
-                int sheepW = fm.stringWidth(new String("Sheep: "));
-                int pcW = fm.stringWidth(new String(CARD));
-                int giveW = fm.stringWidth(new String("I Give: "));
-                int clearW = fm.stringWidth(new String(CLEAR));
-                int bankW = fm.stringWidth(new String(BANK));
+                int sheepW = fm.stringWidth("Sheep: ");
+                int pcW = fm.stringWidth(CARD);
+                int giveW = fm.stringWidth(GIVE);
+                int clearW = fm.stringWidth(CLEAR);
+                int bankW = fm.stringWidth(BANK);
                 int cardsH = 5 * (lineH + space);
                 int tradeH = sqpDim.height + space + (2 * (lineH + space));
                 int sectionSpace = (dim.height - (inset + faceW + cardsH + tradeH + lineH + inset)) / 3;
                 int tradeY = inset + faceW + sectionSpace;
                 int cardsY = tradeY + tradeH + sectionSpace;
 
-                // If we haven't started yet, show the 'Start' button.
-                if (game.getGameState() == SOCGame.NEW)
-                {
-                    startBut.setBounds(inset + faceW + inset, inset + lineH + space, dim.width - (inset + faceW + inset + inset), lineH);
-                }
-                else
-                {
+                // Always reposition everything
+                startBut.setBounds(inset + faceW + inset, inset + lineH + space, dim.width - (inset + faceW + inset + inset), lineH);
+
                     int vpW = fm.stringWidth(vpLab.getText());
                     vpLab.setBounds(inset + faceW + inset, (inset + faceW) - lineH, vpW, lineH);
                     vpSq.setBounds(inset + faceW + inset + vpW + space, (inset + faceW) - lineH, ColorSquare.WIDTH, ColorSquare.WIDTH);
-                    vpSq.draw();
 
                     int topStuffW = inset + faceW + inset + vpW + space + ColorSquare.WIDTH + space;
 
-                    if (player == game.getPlayerWithLargestArmy())
-                    {
-                        larmyLab.setBounds(topStuffW, (inset + faceW) - lineH, (dim.width - (topStuffW + inset + space)) / 2, lineH);
-                    }
-
-                    if (player == game.getPlayerWithLongestRoad())
-                    {
-                        lroadLab.setBounds(topStuffW + ((dim.width - (topStuffW + inset + space)) / 2) + space, (inset + faceW) - lineH, (dim.width - (topStuffW + inset + space)) / 2, lineH);
-                    }
-                }
+                    // always position these: though they may not be visible
+                    larmyLab.setBounds(topStuffW, (inset + faceW) - lineH, (dim.width - (topStuffW + inset + space)) / 2, lineH);
+                    lroadLab.setBounds(topStuffW + ((dim.width - (topStuffW + inset + space)) / 2) + space, (inset + faceW) - lineH, (dim.width - (topStuffW + inset + space)) / 2, lineH);
 
                 giveLab.setBounds(inset, tradeY, giveW, lineH);
                 getLab.setBounds(inset, tradeY + lineH, giveW, lineH);
@@ -1439,27 +1205,13 @@ public class SOCHandPanel extends Panel implements ActionListener
                 int tbW = ((giveW + sqpDim.width) / 2);
                 int tbX = inset;
                 int tbY = tradeY + sqpDim.height + space;
-                clearBut.setBounds(tbX, tbY + lineH + space, tbW, lineH);
                 sendBut.setBounds(tbX, tbY, tbW, lineH);
+                clearBut.setBounds(tbX, tbY + lineH + space, tbW, lineH);
                 bankBut.setBounds(tbX + tbW + space, tbY + lineH + space, tbW, lineH);
 
-                if (playerSend[0] != null)
-                {
                     playerSend[0].setBounds(tbX + tbW + space, tbY, ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                    playerSend[0].draw();
-                }
-
-                if (playerSend[1] != null)
-                {
                     playerSend[1].setBounds(tbX + tbW + space + ((tbW - ColorSquare.WIDTH) / 2), tbY, ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                    playerSend[1].draw();
-                }
-
-                if (playerSend[2] != null)
-                {
                     playerSend[2].setBounds((tbX + tbW + space + tbW) - ColorSquare.WIDTH, tbY, ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                    playerSend[2].draw();
-                }
 
                 knightsLab.setBounds(dim.width - inset - knightsW - ColorSquare.WIDTH - space, tradeY, knightsW, lineH);
                 knightsSq.setBounds(dim.width - inset - ColorSquare.WIDTH, tradeY, ColorSquare.WIDTH, ColorSquare.HEIGHT);
@@ -1472,19 +1224,14 @@ public class SOCHandPanel extends Panel implements ActionListener
 
                 clayLab.setBounds(inset, cardsY, sheepW, lineH);
                 claySq.setBounds(inset + sheepW + space, cardsY, ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                claySq.draw();
                 oreLab.setBounds(inset, cardsY + (lineH + space), sheepW, lineH);
                 oreSq.setBounds(inset + sheepW + space, cardsY + (lineH + space), ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                oreSq.draw();
                 sheepLab.setBounds(inset, cardsY + (2 * (lineH + space)), sheepW, lineH);
                 sheepSq.setBounds(inset + sheepW + space, cardsY + (2 * (lineH + space)), ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                sheepSq.draw();
                 wheatLab.setBounds(inset, cardsY + (3 * (lineH + space)), sheepW, lineH);
                 wheatSq.setBounds(inset + sheepW + space, cardsY + (3 * (lineH + space)), ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                wheatSq.draw();
                 woodLab.setBounds(inset, cardsY + (4 * (lineH + space)), sheepW, lineH);
                 woodSq.setBounds(inset + sheepW + space, cardsY + (4 * (lineH + space)), ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                woodSq.draw();
 
                 int clW = dim.width - (inset + sheepW + space + ColorSquare.WIDTH + (4 * space) + inset);
                 int clX = inset + sheepW + space + ColorSquare.WIDTH + (4 * space);
@@ -1500,56 +1247,40 @@ public class SOCHandPanel extends Panel implements ActionListener
             {
                 /* This is another player's hand */
                 int balloonH = dim.height - (inset + (4 * (lineH + space)) + inset);
-                int dcardsW = fm.stringWidth(new String("Dev. Cards: "));
+                int dcardsW = fm.stringWidth("Dev. Cards: ");
                 int vpW = fm.stringWidth(vpLab.getText());
 
                 if (player.isRobot())
                 {
                     if (game.getPlayer(client.getNickname()) == null)
                     {
-                        if (takeOverBut != null)
-                        {
-                            takeOverBut.setBounds(10, (inset + balloonH) - 10, dim.width - 20, 20);
-                        }
+                        takeOverBut.setBounds(10, (inset + balloonH) - 10, dim.width - 20, 20);
                     }
-                    else if (seatLockBut != null)
+                    else if (seatLockBut.isVisible())
                     {
                         //seatLockBut.setBounds(10, inset+balloonH-10, dim.width-20, 20);
                         seatLockBut.setBounds(inset + dcardsW + space + ColorSquare.WIDTH + space, inset + balloonH + (lineH + space) + (lineH / 2), (dim.width - (2 * (inset + ColorSquare.WIDTH + (2 * space))) - stlmtsW - dcardsW), 2 * (lineH + space));
                     }
                 }
 
-                if (offer != null)
-                {
                     offer.setBounds(inset, inset + faceW + space, dim.width - (2 * inset), balloonH);
                     offer.doLayout();
-                }
 
                 vpLab.setBounds(inset + faceW + inset, (inset + faceW) - lineH, vpW, lineH);
                 vpSq.setBounds(inset + faceW + inset + vpW + space, (inset + faceW) - lineH, ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                vpSq.draw();
 
                 int topStuffW = inset + faceW + inset + vpW + space + ColorSquare.WIDTH + space;
 
-                if (player == game.getPlayerWithLargestArmy())
-                {
-                    larmyLab.setBounds(topStuffW, (inset + faceW) - lineH, (dim.width - (topStuffW + inset + space)) / 2, lineH);
-                }
-
-                if (player == game.getPlayerWithLongestRoad())
-                {
-                    lroadLab.setBounds(topStuffW + ((dim.width - (topStuffW + inset + space)) / 2) + space, (inset + faceW) - lineH, (dim.width - (topStuffW + inset + space)) / 2, lineH);
-                }
+                // always position these: though they may not be visible
+                larmyLab.setBounds(topStuffW, (inset + faceW) - lineH, (dim.width - (topStuffW + inset + space)) / 2, lineH);
+                lroadLab.setBounds(topStuffW + ((dim.width - (topStuffW + inset + space)) / 2) + space, (inset + faceW) - lineH, (dim.width - (topStuffW + inset + space)) / 2, lineH);
 
                 resourceLab.setBounds(inset, inset + balloonH + (2 * (lineH + space)), dcardsW, lineH);
                 resourceSq.setBounds(inset + dcardsW + space, inset + balloonH + (2 * (lineH + space)), ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                resourceSq.draw();
                 developmentLab.setBounds(inset, inset + balloonH + (3 * (lineH + space)), dcardsW, lineH);
                 developmentSq.setBounds(inset + dcardsW + space, inset + balloonH + (3 * (lineH + space)), ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                developmentSq.draw();
                 knightsLab.setBounds(inset, inset + balloonH + (lineH + space), dcardsW, lineH);
                 knightsSq.setBounds(inset + dcardsW + space, inset + balloonH + (lineH + space), ColorSquare.WIDTH, ColorSquare.HEIGHT);
-                knightsSq.draw();
 
                 roadLab.setBounds(dim.width - inset - stlmtsW - ColorSquare.WIDTH - space, inset + balloonH + (lineH + space), stlmtsW, lineH);
                 roadSq.setBounds(dim.width - inset - ColorSquare.WIDTH, inset + balloonH + (lineH + space), ColorSquare.WIDTH, ColorSquare.HEIGHT);
