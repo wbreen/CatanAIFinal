@@ -861,16 +861,18 @@ public class SOCDBHelper
                 createAccountCommand.close();
                 hasAccountQuery.close();
                 hostQuery.close();
-                lastloginUpdate.close();                
+                lastloginUpdate.close();
                 recordLoginCommand.close();
                 resetHumanStats.close();
                 robotParamsQuery.close();
-                saveGameCommand.close();                
+                saveGameCommand.close();
                 updateRobotStats.close();
                 updateUserStats.close();
                 userFaceQuery.close();
-                userPasswordQuery.close();                                
+                userPasswordQuery.close();
                 connection.close();
+
+                connection = null;
             }
             catch (SQLException sqlE)
             {
