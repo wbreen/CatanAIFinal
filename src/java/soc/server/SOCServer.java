@@ -110,7 +110,9 @@ import soc.server.genericServer.Server;
 
 import soc.util.IntPair;
 import soc.util.SOCRobotParameters;
+import soc.util.Version;
 
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -118,11 +120,9 @@ import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
-
 /**
  * A server for Settlers of Catan
  *
- * @version 0.9
  * @author  Robert S. Thomas
  *
  * Note: This is an attempt at being more modular. 5/13/99 RST
@@ -231,13 +231,18 @@ public class SOCServer extends Server
         super(p);
         maxConnections = mc;
 
+        System.err.println("Java Settlers Server " + Version.version() +
+                           ", " + Version.copyright());
+        System.err.println("Network layer based on code by Cristian Bogdan.");
+
         try
         {
             SOCDBHelper.initialize(databaseUserName, databasePassword);
         }
-        catch (java.sql.SQLException sqle)
+        catch (SQLException x) // just a warning
         {
-            System.out.println("Problem connecting to database: " + sqle);
+            System.err.println("Warning: failed to initialize database: " +
+                               x.getMessage());
         }
 
         port = p;
@@ -1893,13 +1898,13 @@ public class SOCServer extends Server
         {
             userPassword = SOCDBHelper.getUserPassword(userName);
         }
-        catch (java.sql.SQLException sqle)
+        catch (SQLException sqle)
         {
             try
             {
                 SOCDBHelper.reconnect(databaseUserName, databasePassword);
             }
-            catch (java.sql.SQLException e)
+            catch (SQLException e)
             {
                 c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
 
@@ -2101,13 +2106,13 @@ public class SOCServer extends Server
                     useDefault = true;
                 }
             }
-            catch (java.sql.SQLException sqle)
+            catch (SQLException sqle)
             {
                 try
                 {
                     SOCDBHelper.reconnect(databaseUserName, databasePassword);
                 }
-                catch (java.sql.SQLException e)
+                catch (SQLException e)
                 {
                     useDefault = true;
                 }
@@ -4245,13 +4250,13 @@ public class SOCServer extends Server
         {
             userPassword = SOCDBHelper.getUserPassword(mes.getNickname());
         }
-        catch (java.sql.SQLException sqle)
+        catch (SQLException sqle)
         {
             try
             {
                 SOCDBHelper.reconnect(databaseUserName, databasePassword);
             }
-            catch (java.sql.SQLException e)
+            catch (SQLException e)
             {
                 c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
             }
@@ -4275,13 +4280,13 @@ public class SOCServer extends Server
         {
             success = SOCDBHelper.createAccount(mes.getNickname(), c.host(), mes.getPassword(), mes.getEmail(), currentTime.getTime());
         }
-        catch (java.sql.SQLException sqle)
+        catch (SQLException sqle)
         {
             try
             {
                 SOCDBHelper.reconnect(databaseUserName, databasePassword);
             }
-            catch (java.sql.SQLException e)
+            catch (SQLException e)
             {
                 c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
             }
@@ -5339,13 +5344,13 @@ public class SOCServer extends Server
                 {
                     SOCDBHelper.saveGameScores(ga.getName(), ga.getPlayer(0).getName(), ga.getPlayer(1).getName(), ga.getPlayer(2).getName(), ga.getPlayer(3).getName(), (short) ga.getPlayer(0).getTotalVP(), (short) ga.getPlayer(1).getTotalVP(), (short) ga.getPlayer(2).getTotalVP(), (short) ga.getPlayer(3).getTotalVP(), ga.getStartTime());
                 }
-                catch (java.sql.SQLException sqle)
+                catch (SQLException sqle)
                 {
                     try
                     {
                         SOCDBHelper.reconnect(databaseUserName, databasePassword);
                     }
-                    catch (java.sql.SQLException e)
+                    catch (SQLException e)
                     {
                         System.out.println("Problem with db in save scores.");
                     }
