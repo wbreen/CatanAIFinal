@@ -98,16 +98,21 @@ import soc.message.SOCTurn;
 import java.applet.Applet;
 import java.applet.AppletContext;
 
+import java.awt.BorderLayout;
 import java.awt.Button;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Label;
+import java.awt.Panel;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -132,6 +137,9 @@ import java.util.Vector;
  */
 public class SOCPlayerClient extends Applet implements Runnable, ActionListener
 {
+    private static final String MAIN_PANEL = "main";
+    private static final String MESSAGE_PANEL = "message";
+
     protected static String STATSPREFEX = "  [";
     protected TextField nick;
     protected TextField pass;
@@ -142,16 +150,12 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
     protected java.awt.List gmlist;
     protected Button jc;
     protected Button jg;
+    protected Label messageLabel;
     protected AppletContext ac;
-    protected int bk;
-    protected int fg;
-    protected String doc;
     protected String lastMessage;
 
-    /**
-     * true if this is an application
-     */
-    protected boolean standalone;
+    protected CardLayout cardLayout;
+    
     protected String host;
     protected int port;
     protected Socket s;
@@ -197,33 +201,26 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
     protected Vector ignoreList = new Vector();
 
     /**
-     * Create a SOCPlayerClient
+     * Create a SOCPlayerClient connecting to localhost port 8880
      */
     public SOCPlayerClient()
     {
-        host = null;
-        port = 8889;
-        standalone = false;
-        gotPassword = false;
+        this(null, 8880);
     }
 
     /**
-     * Constructor for connecting to the specified host, on the specified port
+     * Constructor for connecting to the specified host, on the specified
+     * port.  Must call 'init' to start up and do layout.
      *
      * @param h  host
      * @param p  port
      * @param visual  true if this client is visual
      */
-    public SOCPlayerClient(String h, int p, boolean visual)
+    public SOCPlayerClient(String h, int p)
     {
+        gotPassword = false;
         host = h;
         port = p;
-        standalone = true;
-
-        if (visual)
-        {
-            initVisualElements();
-        }
     }
 
     /**
@@ -231,6 +228,8 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
      */
     protected void initVisualElements()
     {
+        setFont(new Font("Monaco", Font.PLAIN, 12));
+        
         nick = new TextField(20);
         pass = new TextField(20);
         pass.setEchoChar('*');
@@ -239,111 +238,263 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         channel = new TextField(20);
         game = new TextField(20);
         chlist = new java.awt.List(10, false);
+        chlist.add(" ");
         gmlist = new java.awt.List(10, false);
+        gmlist.add(" ");
         jc = new Button("Join Channel");
         jg = new Button("Join Game");
-        ac = null;
-        bk = -1;
-        fg = -1;
 
-        String doc = "";
+        nick.addActionListener(this);
+        pass.addActionListener(this);
+        channel.addActionListener(this);
+        game.addActionListener(this);
+        chlist.addActionListener(this);
+        gmlist.addActionListener(this);
+        jc.addActionListener(this);
+        jg.addActionListener(this);
+        
+        ac = null;
+
+        GridBagLayout gbl = new GridBagLayout();
+        GridBagConstraints c = new GridBagConstraints();
+        Panel mainPane = new Panel(gbl);
+
+        c.fill = GridBagConstraints.BOTH;
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(status, c);
+        mainPane.add(status);
+
+        Label l;
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label("Your Nickname:");
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = 1;
+        gbl.setConstraints(nick, c);
+        mainPane.add(nick);
+
+        l = new Label();
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label("Optional Password:");
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = 1;
+        gbl.setConstraints(pass, c);
+        mainPane.add(pass);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label("New Channel:");
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = 1;
+        gbl.setConstraints(channel, c);
+        mainPane.add(channel);
+
+        l = new Label();
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label("New Game:");
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = 1;
+        gbl.setConstraints(game, c);
+        mainPane.add(game);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label();
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = 1;
+        gbl.setConstraints(jc, c);
+        mainPane.add(jc);
+
+        l = new Label();
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label();
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = 1;
+        gbl.setConstraints(jg, c);
+        mainPane.add(jg);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label("Channels");
+        c.gridwidth = 2;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label();
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label("Games");
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = 2;
+        c.gridheight = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(chlist, c);
+        mainPane.add(chlist);
+
+        l = new Label();
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(gmlist, c);
+        mainPane.add(gmlist);
+
+        // message label that takes up the whole pane
+        messageLabel = new Label("", Label.CENTER);
+
+        Panel messagePane = new Panel(new BorderLayout());
+        messagePane.add(messageLabel, BorderLayout.CENTER);
+        
+        // all together now...
+        cardLayout = new CardLayout();
+        setLayout(cardLayout);
+
+        add(messagePane, MESSAGE_PANEL); // shown first
+        add(mainPane, MAIN_PANEL);
     }
 
     /**
-     * Translate a hex string into an integer
+     * Retrieve a parameter and translate to a hex value.
      *
-     * @param s  String to be converted
-     * @return   a hex number represting the color
+     * @param name a parameter name. null is ignored
+     * @return the parameter parsed as a hex value or -1 on error
      */
-    static int color(String s)
+    public int getHexParameter(String name)
     {
-        if (s == null)
+        String value = null;
+        int iValue = -1;
+        try
         {
-            return -1;
-        }
-
-        char[] c = s.trim().toLowerCase().toCharArray();
-        int rez = 0;
-
-        if (c.length > 6)
-        {
-            return -1;
-        }
-
-        for (int i = 0; i < c.length; i++)
-        {
-            rez <<= 4;
-
-            if ((c[i] >= '0') && (c[i] <= '9'))
+            value = getParameter(name);
+            if (value != null)
             {
-                rez += (c[i] - '0');
-            }
-            else if ((c[i] >= 'a') && (c[i] <= 'f'))
-            {
-                rez += ((10 + c[i]) - 'a');
-            }
-            else
-            {
-                return -1;
+                iValue = Integer.parseInt(value, 16);
             }
         }
-
-        return rez;
+        catch (Exception e)
+        {
+            System.err.println("Invalid " + name + ": " + value);
+        }
+        return iValue;
     }
 
+    /**
+     * Called when the applet should start it's work.
+     */
+    public void start()
+    {
+        nick.requestFocus();
+    }
+    
     /**
      * Initialize the applet
      */
     public synchronized void init()
     {
-        initVisualElements();
+        System.out.println("Catan Client 0.9, (c) 2001 Robb Thomas.");
+        System.out.println("Network layer based on code by Cristian Bogdan.");
 
-        try
+        try // getting applet environment
         {
-            ac = getAppletContext();
-            doc = getDocumentBase().toString();
-            System.out.println("Catan Client 0.9, (c) 2001 Robb Thomas.");
-            System.out.println("Network layer based on code by Cristian Bogdan.");
-            bk = color(getParameter("background"));
-            fg = color(getParameter("foreground"));
-
-            String s = getParameter("suggestion");
-
-            if (s.length() > 0)
+            ac = getAppletContext(); // throws exception, if not on web page
+            String param = null;
+            int intValue;
+            
+            intValue = getHexParameter("background"); 
+            if (intValue != -1)
             {
-                channel.setText(s);
+               setBackground(new Color(intValue));
             }
-        }
-        catch (Exception exc)
-        {
-            ;
-        }
 
-        if (host == null)
-        {
+            intValue = getHexParameter("foreground");
+            if (intValue != -1)
+            {
+                setForeground(new Color(intValue));
+            }
+
+            param = getParameter("suggestion");
+            if (param != null)
+            {
+                channel.setText(param);
+            }
+
             System.out.println("Getting host...");
             host = getCodeBase().getHost();
-            System.out.println("HOST = " + host);
+            if (host.equals(""))
+                host = null;  // localhost
 
-            try
-            {
-                port = Integer.parseInt(getParameter("PORT"));
+            try {
+                param = getParameter("PORT");
+                if (param != null)
+                    port = Integer.parseInt(param, 16);
             }
-            catch (Exception e) {}
+            catch (Exception e)
+            {
+                System.err.println("Invalid port: " + param);
+            }
         }
+        catch (Exception exc) {}
 
-        if (bk != -1)
-        {
-            setBackground(new Color(bk));
-        }
+        initVisualElements(); // after the background is set
 
-        if (fg != -1)
-        {
-            setForeground(new Color(fg));
-        }
-
-        chlist.add(" ");
-        gmlist.add(" ");
+        System.out.println("Connecting to "+(host!=null?host:"localhost")+":"+port);
+        messageLabel.setText("Connecting to server...");
+        validate();
 
         try
         {
@@ -356,38 +507,10 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         catch (Exception e)
         {
             ex = e;
-            System.err.println("Could not connect to the server: " + ex);
+            String msg = "Could not connect to the server: " + ex;
+            System.err.println(msg);
+            messageLabel.setText(msg);
         }
-
-        D.ebugPrintln("component count before = " + getComponentCount());
-
-        Label l;
-        setFont(new Font("Monaco", Font.PLAIN, 12));
-
-        GridBagLayout gbl = new GridBagLayout();
-        setLayout(gbl);
-
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.BOTH;
-
-        if (ex != null)
-        {
-            l = new Label("Could not connect to the server: " + ex);
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            c.gridheight = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(l, c);
-            add(l);
-        }
-        else
-        {
-            l = new Label("Connecting to server...");
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            c.gridheight = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(l, c);
-            add(l);
-        }
-
-        resize(600, 450);
     }
 
     /**
@@ -618,14 +741,13 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         }
         catch (IOException e)
         {
-            if (!connected)
+            // purposefully closing the socket brings us here too
+            if (connected)
             {
-                return;
+                ex = e;
+                System.out.println("could not read from the net: " + ex);
+                destroy();
             }
-
-            ex = e;
-            System.out.println("could not read from the net: " + ex);
-            destroy();
         }
     }
 
@@ -647,7 +769,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
     {
         lastMessage = s;
 
-        D.ebugPrintln("OUT - " + s);
+        D.ebugPrintln("OUT - " + SOCMessage.toMsg(s));
 
         if ((ex != null) || !connected)
         {
@@ -1081,7 +1203,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         gotPassword = true;
 
         ChannelFrame cf = new ChannelFrame(mes.getChannel(), this);
-        cf.init();
+        cf.setVisible(true);
         channels.put(mes.getChannel(), cf);
     }
 
@@ -1134,165 +1256,9 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         //
         // this message indicates that we're connected to the server
         //
-        removeAll();
-        invalidate();
-
-        GridBagLayout gbl = new GridBagLayout();
-		setFont(new Font("Monaco", Font.PLAIN, 12));
-        setLayout(gbl);
-
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.BOTH;
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(status, c);
-        add(status);
-        channel.addActionListener(this);
-
-        Label l;
-
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label("Your Nickname:");
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        c.gridwidth = 1;
-        gbl.setConstraints(nick, c);
-        add(nick);
-        nick.addActionListener(this);
-
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label("Optional Password:");
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        c.gridwidth = 1;
-        gbl.setConstraints(pass, c);
-        add(pass);
-        pass.addActionListener(this);
-
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label("New Channel:");
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        c.gridwidth = 1;
-        gbl.setConstraints(channel, c);
-        add(channel);
-        channel.addActionListener(this);
-
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label("New Game:");
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        c.gridwidth = 1;
-        gbl.setConstraints(game, c);
-        add(game);
-        game.addActionListener(this);
-
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        c.gridwidth = 1;
-        gbl.setConstraints(jc, c);
-        add(jc);
-        jc.addActionListener(this);
-
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        c.gridwidth = 1;
-        gbl.setConstraints(jg, c);
-        add(jg);
-        jg.addActionListener(this);
-
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label("Channels");
-        c.gridwidth = 2;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        l = new Label("Games");
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        chlist.setSize(40, 300);
-        c.gridwidth = 2;
-        c.gridheight = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(chlist, c);
-        add(chlist);
-        chlist.addActionListener(this);
-
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        add(l);
-
-        gmlist.setSize(40, 300);
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(gmlist, c);
-        add(gmlist);
-        gmlist.addActionListener(this);
-
-        nick.requestFocus();
-        doLayout();
-
-        D.ebugPrintln("component count after = " + getComponentCount());
-
+        cardLayout.show(this, MAIN_PANEL);
+        validate();
+        
         status.setText("Login by entering nickname and then joining a channel or game.");
 
         Enumeration channelsEnum = (mes.getChannels()).elements();
@@ -1397,7 +1363,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         if (ga != null)
         {
             SOCPlayerInterface pi = new SOCPlayerInterface(mes.getGame(), this, ga);
-            pi.init();
+            pi.setVisible(true);
             playerInterfaces.put(mes.getGame(), pi);
             games.put(mes.getGame(), ga);
         }
@@ -1419,7 +1385,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
      */
     protected void handleLEAVEGAME(SOCLeaveGame mes)
     {
-        String gn = (mes.getGame());
+        String gn = mes.getGame();
         SOCGame ga = (SOCGame) games.get(gn);
 
         if (ga != null)
@@ -1596,7 +1562,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
             bd.setRobberHex(mes.getRobberHex());
 
             SOCPlayerInterface pi = (SOCPlayerInterface) playerInterfaces.get(mes.getGame());
-            pi.getBoardPanel().forceRedraw();
+            pi.getBoardPanel().repaint();
         }
     }
 
@@ -1620,12 +1586,17 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
 
         if (ga != null)
         {
+            SOCPlayerInterface pi = (SOCPlayerInterface) playerInterfaces.get(mes.getGame());
+            if (ga.getGameState() == ga.NEW && mes.getState() != ga.NEW)
+            {
+                pi.startGame();
+            }
+            
             ga.setGameState(mes.getState());
 
-            SOCPlayerInterface pi = (SOCPlayerInterface) playerInterfaces.get(mes.getGame());
             pi.getBoardPanel().updateMode();
             pi.getBuildingPanel().updateButtonStatus();
-            pi.getBoardPanel().forceRedraw();
+            pi.getBoardPanel().repaint();
 
             SOCPlayer ourPlayerData = ga.getPlayer(nickname);
 
@@ -1660,7 +1631,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
             ga.setCurrentPlayerNumber(mes.getPlayerNumber());
 
             SOCPlayerInterface pi = (SOCPlayerInterface) playerInterfaces.get(mes.getGame());
-            pi.getBoardPanel().forceRedraw();
+            pi.getBoardPanel().repaint();
 
             for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
             {
@@ -1714,7 +1685,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
             }
 
             pi.getBoardPanel().updateMode();
-            pi.getBoardPanel().forceRedraw();
+            pi.getBoardPanel().repaint();
         }
     }
 
@@ -2144,7 +2115,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         {
             SOCPlayerInterface pi = (SOCPlayerInterface) playerInterfaces.get(mes.getGame());
             ga.setCurrentDice(mes.getResult());
-            pi.getBoardPanel().forceRedraw();
+            pi.getBoardPanel().repaint();
         }
     }
 
@@ -2218,7 +2189,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
             }
 
             pi.getPlayerHandPanel(mes.getPlayerNumber()).updateValue(SOCHandPanel.VICTORYPOINTS);
-            pi.getBoardPanel().forceRedraw();
+            pi.getBoardPanel().repaint();
             pi.getBuildingPanel().updateButtonStatus();
         }
     }
@@ -2241,7 +2212,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
              * the robber moved without seeing if something was stolen.
              */
             ga.getBoard().setRobberHex(mes.getCoordinates());
-            pi.getBoardPanel().forceRedraw();
+            pi.getBoardPanel().repaint();
         }
     }
 
@@ -2457,23 +2428,10 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
     protected void handleREJECTCONNECTION(SOCRejectConnection mes)
     {
         disconnect();
-        D.ebugPrintln("component count before = " + getComponentCount());
-        removeAll();
-        D.ebugPrintln("component count after = " + getComponentCount());
-        invalidate();
-
-        GridBagLayout gbl = new GridBagLayout();
-        setLayout(gbl);
-
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.BOTH;
-
-        Label l = new Label(mes.getText());
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        c.gridheight = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        add(l);
-        doLayout();
+        
+        messageLabel.setText(mes.getText());
+        cardLayout.show(this, MESSAGE_PANEL);
+        validate();
     }
 
     /**
@@ -2777,10 +2735,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
     {
         connected = false;
 
-        if ((Thread.currentThread() != reader) && (reader != null) && reader.isAlive())
-        {
-            reader.stop();
-        }
+        // reader will die once 'connected' is false, and socket is closed
 
         try
         {
@@ -3352,8 +3307,12 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         {
             ((SOCPlayerInterface) e.nextElement()).over(err);
         }
-
+        
         disconnect();
+
+        messageLabel.setText(err);
+        cardLayout.show(this, MESSAGE_PANEL);
+        validate();
     }
 
     /**
@@ -3361,37 +3320,41 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
      */
     public static void main(String[] args)
     {
-        Frame f = new Frame("SOCPlayerClient");
-
-        // Add a listener for the close event
-        f.addWindowListener(new WindowAdapter()
-            {
-                public void windowClosing(WindowEvent evt)
-                {
-                    // Exit the application
-                    System.exit(0);
-                }
-            });
-
         if (args.length < 2)
         {
-            System.err.println("usage: java soc.client.SOCPlayerClient host port_number");
-
+            System.err.println("usage: java soc.client.SOCPlayerClient <host> <port>");
             return;
         }
 
-        Applet ex1 = new SOCPlayerClient(args[0], Integer.parseInt(args[1]), true);
+        Frame f = new Frame("SOCPlayerClient");
+        SOCPlayerClient ex1 = new SOCPlayerClient(args[0], Integer.parseInt(args[1]));
+
+        // Add a listener for the close event
+        f.addWindowListener(ex1.createWindowAdapter());
+        
+        ex1.setBackground(new Color(Integer.parseInt("61AF71",16)));
+        ex1.setForeground(Color.black);
         ex1.init();
         f.add("Center", ex1);
-        f.setSize(600, 500);
-        f.show();
+        f.setSize(620, 400);
+        f.setVisible(true);
     }
 
-    /**
-     * @return true if this is an application
-     */
-    public boolean isStandalone()
+    private WindowAdapter createWindowAdapter()
     {
-        return standalone;
+        return new MyWindowAdapter();
+    }
+    
+    private class MyWindowAdapter extends WindowAdapter
+    {
+        public void windowClosing(WindowEvent evt)
+        {
+            System.exit(0);
+        }
+
+        public void windowOpened(WindowEvent evt)
+        {
+            nick.requestFocus();
+        }
     }
 }

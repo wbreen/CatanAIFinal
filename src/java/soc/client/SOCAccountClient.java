@@ -22,6 +22,7 @@ package soc.client;
 
 import soc.disableDebug.D;
 
+import soc.message.SOCChannels;
 import soc.message.SOCCreateAccount;
 import soc.message.SOCMessage;
 import soc.message.SOCRejectConnection;
@@ -30,13 +31,16 @@ import soc.message.SOCStatusMessage;
 import java.applet.Applet;
 import java.applet.AppletContext;
 
+import java.awt.BorderLayout;
 import java.awt.Button;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Label;
+import java.awt.Panel;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -61,21 +65,21 @@ import java.net.Socket;
  */
 public class SOCAccountClient extends Applet implements Runnable, ActionListener
 {
+    private static final String MAIN_PANEL = "main";
+    private static final String MESSAGE_PANEL = "message";
+
     protected TextField nick;
     protected TextField pass;
     protected TextField pass2;
     protected TextField email;
     protected TextField status;
     protected Button submit;
+    protected Label messageLabel;
     protected AppletContext ac;
-    protected int bk;
-    protected int fg;
     protected boolean submitLock;
 
-    /**
-     * true if this is an application
-     */
-    protected boolean standalone;
+    protected CardLayout cardLayout;
+    
     protected String host;
     protected int port;
     protected Socket s;
@@ -106,32 +110,24 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
     protected String emailAddress = null;
 
     /**
-     * Create a SOCAccountClient
+     * Create a SOCAccountClient connecting to localhost port 8880
      */
     public SOCAccountClient()
     {
-        host = null;
-        port = 8889;
-        standalone = false;
+        this(null, 8880);
     }
 
     /**
-     * Constructor for connecting to the specified host, on the specified port
+     * Constructor for connecting to the specified host, on the specified port.
+     * Must call 'init' to start up and do layout.
      *
      * @param h  host
      * @param p  port
-     * @param visual  true if this client is visual
      */
-    public SOCAccountClient(String h, int p, boolean visual)
+    public SOCAccountClient(String h, int p)
     {
         host = h;
         port = p;
-        standalone = true;
-
-        if (visual)
-        {
-            initVisualElements();
-        }
     }
 
     /**
@@ -139,6 +135,8 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
      */
     protected void initVisualElements()
     {
+        setFont(new Font("Monaco", Font.PLAIN, 12));
+        
         nick = new TextField(20);
         pass = new TextField(10);
         pass.setEchoChar('*');
@@ -149,50 +147,130 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
         status.setEditable(false);
         submit = new Button("Create Account");
         submitLock = false;
-        bk = -1;
-        fg = -1;
+
+        submit.addActionListener(this);
+
+        ac = null;
+
+        GridBagLayout gbl = new GridBagLayout();
+        GridBagConstraints c = new GridBagConstraints();
+        Panel mainPane = new Panel(gbl);
+
+        c.fill = GridBagConstraints.BOTH;
+
+        Label l;
+
+        l = new Label("Your Nickname:");
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(nick, c);
+        mainPane.add(nick);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label("Password:");
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(pass, c);
+        mainPane.add(pass);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label("Password (again):");
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(pass2, c);
+        mainPane.add(pass2);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label("Email (optional):");
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(email, c);
+        mainPane.add(email);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        l = new Label();
+        c.gridwidth = 1;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(submit, c);
+        mainPane.add(submit);
+
+        l = new Label();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
+
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(status, c);
+        mainPane.add(status);
+
+        // message label that takes up the whole pane
+        messageLabel = new Label("", Label.CENTER);
+
+        Panel messagePane = new Panel(new BorderLayout());
+        messagePane.add(messageLabel, BorderLayout.CENTER);
+        
+        // all together now...
+        cardLayout = new CardLayout();
+        setLayout(cardLayout);
+
+        add(messagePane, MESSAGE_PANEL); // shown first
+        add(mainPane, MAIN_PANEL);        
     }
 
     /**
-     * Translate a hex string into an integer
+     * Retrieve a parameter and translate to a hex value.
      *
-     * @param s  String to be converted
-     * @return   a hex number represting the color
+     * @param name a parameter name. null is ignored
+     * @return the parameter parsed as a hex value or -1 on error
      */
-    static int color(String s)
+    public int getHexParameter(String name)
     {
-        if (s == null)
+        String value = null;
+        int iValue = -1;
+        try
         {
-            return -1;
-        }
-
-        char[] c = s.trim().toLowerCase().toCharArray();
-        int rez = 0;
-
-        if (c.length > 6)
-        {
-            return -1;
-        }
-
-        for (int i = 0; i < c.length; i++)
-        {
-            rez <<= 4;
-
-            if ((c[i] >= '0') && (c[i] <= '9'))
+            value = getParameter(name);
+            if (value != null)
             {
-                rez += (c[i] - '0');
-            }
-            else if ((c[i] >= 'a') && (c[i] <= 'f'))
-            {
-                rez += ((10 + c[i]) - 'a');
-            }
-            else
-            {
-                return -1;
+                iValue = Integer.parseInt(value, 16);
             }
         }
-
-        return rez;
+        catch (Exception e)
+        {
+            System.err.println("Invalid " + name + ": " + value);
+        }
+        return iValue;
     }
 
     /**
@@ -200,43 +278,49 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
      */
     public synchronized void init()
     {
-        initVisualElements();
+        System.out.println("SOC Account Client 0.1, (c) 2001 Robb Thomas.");
+        System.out.println("Network layer based on code by Cristian Bogdan.");
 
-        try
+        try // getting applet environment
         {
-            ac = getAppletContext();
-            System.out.println("SOC Account Client 0.1, (c) 2001 Robb Thomas.");
-            System.out.println("Network layer based on code by Cristian Bogdan.");
-            bk = color(getParameter("background"));
-            fg = color(getParameter("foreground"));
-        }
-        catch (Exception exc)
-        {
-            ;
-        }
+            ac = getAppletContext(); // throws exception, if not on web page
+            String param = null;
+            int intValue;
+            
+            intValue = getHexParameter("background"); 
+            if (intValue != -1)
+            {
+               setBackground(new Color(intValue));
+            }
 
-        if (host == null)
-        {
+            intValue = getHexParameter("foreground");
+            if (intValue != -1)
+            {
+                setForeground(new Color(intValue));
+            }
+
             System.out.println("Getting host...");
             host = getCodeBase().getHost();
-            System.out.println("HOST = " + host);
+            if (host.equals(""))
+                host = null;  // localhost
 
-            try
-            {
-                port = Integer.parseInt(getParameter("PORT"));
+            try {
+                param = getParameter("PORT");
+                if (param != null)
+                    port = Integer.parseInt(param, 16);
             }
-            catch (Exception e) {}
+            catch (Exception e)
+            {
+                System.err.println("Invalid port: " + param);
+            }
         }
+        catch (Exception exc) {}
 
-        if (bk != -1)
-        {
-            setBackground(new Color(bk));
-        }
+        initVisualElements(); // after the background is set
 
-        if (fg != -1)
-        {
-            setForeground(new Color(fg));
-        }
+        System.out.println("Connecting to "+(host!=null?host:"localhost")+":"+port);
+        messageLabel.setText("Connecting to server...");
+        validate();
 
         try
         {
@@ -249,109 +333,9 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
         catch (Exception e)
         {
             ex = e;
-            System.err.println("Could not connect to the server: " + ex);
-        }
-
-        setFont(new Font("Monaco", Font.PLAIN, 12));
-
-        GridBagLayout gbl = new GridBagLayout();
-        setLayout(gbl);
-
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.BOTH;
-
-        Label l;
-
-        if (ex != null)
-        {
-            l = new Label("Could not connect to the server: " + ex);
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            c.gridheight = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            return;
-        }
-
-        if (connected)
-        {
-            l = new Label("Your Nickname:");
-            c.gridwidth = 1;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(nick, c);
-            add(nick);
-
-            l = new Label();
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            l = new Label("Password:");
-            c.gridwidth = 1;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(pass, c);
-            add(pass);
-
-            l = new Label();
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            l = new Label("Password (again):");
-            c.gridwidth = 1;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(pass2, c);
-            add(pass2);
-
-            l = new Label();
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            l = new Label("Email (optional):");
-            c.gridwidth = 1;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(email, c);
-            add(email);
-
-            l = new Label();
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            l = new Label();
-            c.gridwidth = 1;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(submit, c);
-            add(submit);
-            submit.addActionListener(this);
-
-            l = new Label();
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(l, c);
-            add(l);
-
-            c.gridwidth = GridBagConstraints.REMAINDER;
-            gbl.setConstraints(status, c);
-            add(status);
-
-            nick.requestFocus();
-            resize(600, 300);
+            String msg = "Could not connect to the server: " + ex;
+            System.err.println(msg);
+            messageLabel.setText(msg);
         }
     }
 
@@ -441,14 +425,13 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
         }
         catch (IOException e)
         {
-            if (!connected)
+            // purposefully closing the socket brings us here too
+            if (connected)
             {
-                return;
+                ex = e;
+                System.out.println("could not read from the net: " + ex);
+                destroy();
             }
-
-            ex = e;
-            System.out.println("could not read from the net: " + ex);
-            destroy();
         }
     }
 
@@ -497,6 +480,14 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
             switch (mes.getType())
             {
             /**
+             * list of channels on the server (first message from server)
+             */
+            case SOCMessage.CHANNELS:
+                handleCHANNELS((SOCChannels) mes);
+
+                break;
+
+            /**
              * status message
              */
             case SOCMessage.STATUSMESSAGE:
@@ -520,26 +511,31 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
         }
     }
 
+
+    /**
+     * handle the "list of channels" message
+     * @param mes  the message
+     */
+    protected void handleCHANNELS(SOCChannels mes)
+    {
+        //
+        // this message indicates that we're connected to the server
+        //
+        cardLayout.show(this, MAIN_PANEL);
+        validate();
+    }
+
     /**
      * handle the "reject connection" message
      * @param mes  the message
      */
     protected void handleREJECTCONNECTION(SOCRejectConnection mes)
     {
-        removeAll();
-        invalidate();
-
-        GridBagLayout gbl = new GridBagLayout();
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.BOTH;
-
-        Label l = new Label(mes.getText());
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        c.gridheight = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        add(l);
-        doLayout();
         disconnect();
+
+        messageLabel.setText(mes.getText());
+        cardLayout.show(this, MESSAGE_PANEL);
+        validate();
     }
 
     /**
@@ -559,10 +555,7 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
     {
         connected = false;
 
-        if ((Thread.currentThread() != reader) && (reader != null) && reader.isAlive())
-        {
-            reader.stop();
-        }
+        // reader will die once 'connected' is false, and socket is closed
 
         try
         {
@@ -587,8 +580,11 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
     {
         String err = "Sorry, the applet has been destroyed. " + ((ex == null) ? "Load the page again." : ex.toString());
 
-        status.setText(err);
         disconnect();
+        
+        messageLabel.setText(err);
+        cardLayout.show(this, MESSAGE_PANEL);
+        validate();
     }
 
     /**
@@ -596,37 +592,41 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
      */
     public static void main(String[] args)
     {
-        Frame f = new Frame("SOCAccountClient");
-
-        // Add a listener for the close event
-        f.addWindowListener(new WindowAdapter()
-            {
-                public void windowClosing(WindowEvent evt)
-                {
-                    // Exit the application
-                    System.exit(0);
-                }
-            });
-
         if (args.length < 2)
         {
-            System.err.println("usage: java soc.client.SOCAccountClient host port_number");
-
+            System.err.println("usage: java soc.client.SOCAccountClient <host> <port>");
             return;
         }
+        
+        Frame f = new Frame("SOCAccountClient");
+        SOCAccountClient ex1 = new SOCAccountClient(args[0], Integer.parseInt(args[1]));
 
-        Applet ex1 = new SOCAccountClient(args[0], Integer.parseInt(args[1]), true);
+        // Add a listener for the close event
+        f.addWindowListener(ex1.createWindowAdapter());
+
+        ex1.setBackground(new Color(Integer.parseInt("61AF71",16)));
+        ex1.setForeground(Color.black);
         ex1.init();
         f.add("Center", ex1);
-        f.setSize(600, 500);
+        f.setSize(600, 350);
         f.show();
     }
 
-    /**
-     * @return true if this is an application
-     */
-    public boolean isStandalone()
+    private WindowAdapter createWindowAdapter()
     {
-        return standalone;
+        return new MyWindowAdapter();
+    }
+    
+    private class MyWindowAdapter extends WindowAdapter
+    {
+        public void windowClosing(WindowEvent evt)
+        {
+            System.exit(0);
+        }
+
+        public void windowOpened(WindowEvent evt)
+        {
+            nick.requestFocus();
+        }
     }
 }
