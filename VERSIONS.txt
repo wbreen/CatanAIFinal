@@ -4,6 +4,8 @@
 
 - jsettlers[.bat] and jsettlersd[.bat] scripts added for easier command
   line startup
+- fixed [bug 950989] which caused chat windows to wrap oddly, and
+  removed extra blank always at bottom of chat text
 
     > 1.0.5 (build 2004-06-12)
 
