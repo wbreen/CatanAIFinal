@@ -106,6 +106,9 @@ public abstract class SOCMessage implements Serializable, Cloneable
     public static final int STATUSMESSAGE = 1069;
     public static final int CREATEACCOUNT = 1070;
     public static final int UPDATEROBOTPARAMS = 1071;
+    public static final int GETSTATISTICS = 1072;
+    public static final int SHOWSTATS = 1073;
+    public static final int RESETSTATS = 1074;
     public static final int SERVERPING = 9999;
 
     /**
@@ -377,6 +380,15 @@ public abstract class SOCMessage implements Serializable, Cloneable
 
             case CREATEACCOUNT:
                 return SOCCreateAccount.parseDataStr(data);
+                
+            case GETSTATISTICS:
+                return SOCGetStatistics.parseDataStr(data);
+                
+            case RESETSTATS:
+                return SOCResetStatistics.parseDataStr(data);
+                
+            case SHOWSTATS:
+                return SOCShowStatistics.parseDataStr(data);
 
             case UPDATEROBOTPARAMS:
                 return SOCUpdateRobotParams.parseDataStr(data);
