@@ -56,7 +56,9 @@ Requirements
 To play JSettlers by connecting to a remote server you will need the
 Java Runtime Version 1.1 or above (1.4 recommended). To connect as an
 applet, use any browser which is Java enabled (again, we recommend
-Java 1.4 using the browser plug-in).
+Java 1.4 using the browser plug-in). Note that if your server uses a
+user database, the statistics viewer applet does not work on clients
+prior to Java 1.2.
 
 To Play JSettlers locally you need the Java Runtime 1.4 (or
 later). Remote clients started on the command line can connect
@@ -68,32 +70,67 @@ To build JSettlers from source, you will need Apache Ant, available from
 http://ant.apache.org.
 
 
+Distribution Contents
+---------------------
+
+JSettlers distributes as an archive which unpacks to the directory
+"jsettlers-<version>".  In this documentation we refer to that
+directory as "$JS".
+
+This documentation refers to the JSettlers distribution directory as
+"$JS", which should contain:
+
+$JS/
+  COPYING.txt
+  TODO.txt
+  VERSIONS.txt
+  JSettlers.jar
+  JSettlersServer.jar
+  bin/
+  docs/
+  jsettlers.properties
+  jsettlers.properties.default
+  lib/
+  web/
+  
+[TODO: finish?]
+
+
 Setting up and testing
 ----------------------
 
-From the command line, make sure you are in the JSettlers distribution
-directory which contains both JSettlers.jar, settlers-server.jar and the
-"lib" directory.  Start the server with the following command
-(server requires Java 1.4):
+The $JS directory can be put anywhere on your system.  If you put
+$JS/bin on your PATH, you can omit the path in the examples that
+follow.
 
-  $ java -jar JSettlersServer.jar 8880 10 socuser socpass
+Start by editing the properties file for your system. For the server,
+edit $JS/jsettlersd.properties. This is a Java properties file and is
+commented to describe the parameters. If, later, you wish to revert to
+the default settings, replace that file with a copy of
+$JS/jsettlersd.properties.default.
 
-If MySQL is not installed and running (See "Database Setup"), you will
-see a warning with the appropriate explanation:
+To start the server, from the command line enter:
 
-  Warning: failed to initialize database: ....
+  $ $JS/bin/jsettlersd
 
-The server will function normally except that user accounts cannot be
-maintained.
+If the Java executable is not on your PATH, you may set the JAVA_HOME
+to specify it. This can also be used to start with a different version
+of Java than your systems default.
 
-Now, from another command line window, start the player client with
+By default, use of a database to store user information is
+disabled. See the "Database Setup" section for more information.
+
+Now, from another command line, start the player client with
 the following command:
 
-  $ java -jar JSettlers.jar localhost 8880
+  $ $JS/bin/jsettlers localhost <port>
+
+Where port is the same as specified in your jsettlersd.properties file
+(8880 by default).
 
 If you are using Java 1.1 you will need to unpack the Java archive
 (Java could not run directly from jar files until version 1.2). The
-commands to unpack, then start the client are:
+commands to unpack, then start the client are: [TODO: revisit]
 
   $ jar -xf JSettlers.jar
   $ java soc.client.SOCPlayerClient localhost 8880
@@ -117,7 +154,7 @@ If you do not, you might not have entered your nickname correctly.  It
 must be "debug" in order to use the administrative commands.
 
 Now you can add some robot players.  Enter the following commands in
-separate command line windows:
+separate command line windows [TODO: fix!].
 
   $ java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd
 
@@ -129,12 +166,12 @@ Now click on the "Sit Here" button and press "Start Game".  The robot
 players should automatically join the game and start playing.
 
 If you want other people to access your server, tell them your server
-IP address and port number (in this case 8880).  They will enter the
-following command (or use the instructions above for Java 1.1):
+IP address and port number.  They will enter the following command:
 
-  $ java -jar JSettlers.jar <host> <port_number>
+  $ $JS/bin/jsettlers <host> <port>
 
-Where host is the IP address and port_number is the port number.
+Where host is your IP address and port is the port number you put in
+jsettlersd.properties.
 
 If you would like to maintain accounts for your JSettlers server,
 start the database prior to starting the JSettlers Server. See the
@@ -146,7 +183,7 @@ Shutting down the server
 
 To shut down the server enter *STOP* in the chat area of a game
 window.  This will stop the server and all connected clients will be
-disconnected.
+disconnected. You must be logged on as "debug" for this to work.
 
 
 Hosting a JSettlers server
@@ -169,18 +206,18 @@ installed it correctly, and will refer to "${docroot}" as a directory
 your web server is configured to provide.
 
 Copy the sample .html pages from "web" to ${docroot}. Edit them, to
-make sure the PORT parameter in "index.html" and "account.html" applet
-tags match the port of your JSettlers server.
+make sure the PORT parameter in "index.html" "statistics.html" and
+"account.html" applet tags match the port of your JSettlers server.
 
 Next copy the client files to the server. Copy JSettlers.jar to
 ${docroot}. This will allow users with Java version 1.2 or later
-installed to use the browser plug-in. Using the .jar like allows for
+installed to use the browser plug-in. Using the .jar file allows for
 faster downloads, and startup times, but does not allow browsers with
 Java version 1.1 to start the client.
 
 To allow browsers with old versions of Java (1.1) to use the applet,
-unpack JSettlers.jar and copy (recursively) the extracted "soc"
-and "resources" directories to ${docroot}. To unpack, use:
+unpack JSettlers.jar and copy (recursively) the extracted "soc" and
+"resources" directories to ${docroot}. To unpack, use: [TODO: revisit]
 
   $ jar -xf JSettlers.jar
 
@@ -189,7 +226,7 @@ directory as the sample .html pages to provide user documentation.
 
 Your web server directory structure should now contain:
   ${docroot}/index.html
-  ${docroot}/*.html
+  ${docroot}/<other>.html
   ${docroot}/JSettlers.jar
   ${docroot}/resources/...
   ${docroot}/soc/...
@@ -203,27 +240,36 @@ Database Setup
 --------------
 
 If you want to maintain user accounts, you will need to set up a MySQL
-database. This will eliminate the "Problem connecting to database"
-errors from the server. We assume you have installed it correctly.
+database. We assume you have installed it correctly.
 
-An example script for MySQL has been included, to initialize a clean
-system.  Edit the script for your system if you wish to use a
-different database (default=socdata) or user/password
-(default=socuser/socpass)
+Edit the $JS/jsettlersd.properties file for your database management
+system (dbms). You can specify your Java driver, which must be
+installed as a Java extension [TODO: elaborate], database name
+(default is socdata), and user/password values (defaults are
+socuser/socpass).
 
-To create the database and a user on a mysql server, and initialize
-the tables, there are scripts provided in ${JSETTLERS_HOME}/bin/sql
+Note that testing is only done on MySQL. Please share any experience
+you have with other databases us at the SourceForge Site.
 
-  $ mysql -u root -p -e "SOURCE bin/sql/jsettlers-db.sql"
-  $ mysql -u root -p socdata -e "SOURCE bin/sql/jsettlers-tables.sql"
 
-The first command connects as root, prompts for the root password, and
-creates the 'socdata' database, and a 'socuser' user with the password
-'socpass'.  The second creates the tables, and will fail if the tables
-already exist.
+An example SQL script has been included to initialize a clean system.
+Edit the script for your system (using the same values as in your
+jsettlersd.properties file).
+
+To create the default database and user, execute the SQL db script:
+
+  $ mysql -u root -p -e "SOURCE $JS/bin/sql/jsettlers-db.sql"
+
+This will connect as root, prompt for the root password, create the
+'socdata' database, create a 'socuser' user with the password
+'socpass'. To build the empty tables, execute the SQL tables script:
+
+  $ mysql -u root -p -e "SOURCE $JS/bin/sql/jsettlers-tables.sql"
+
+This script will fail if the tables already exist.
 
 To create accounts in the socdata database, run the simple account
-creation client with the following command:
+creation client with the following command: [TODO: revisit]
 
   $ java -cp JSettlers.jar soc.client.SOCAccountClient localhost 8880
 
