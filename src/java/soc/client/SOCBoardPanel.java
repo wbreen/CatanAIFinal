@@ -29,10 +29,12 @@ import soc.game.SOCSettlement;
 
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.MediaTracker;
+import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -48,14 +50,14 @@ import java.util.Enumeration;
  */
 public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionListener
 {
-    private static String IMAGEDIR = "soc/client/images";
+    private static String IMAGEDIR = "/soc/client/images";
 
     /**
      * size of the whole panel
      */
     public static final int panelx = 253;
     public static final int panely = 222;
-
+    
     /**
      * hex coordinates for drawing
      */
@@ -138,20 +140,20 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
     /**
      * Hex pix
      */
-    private Image[] hexes;
-    private Image[] ports;
+    private static Image[] hexes;
+    private static Image[] ports;
 
     /**
      * number pix
      */
-    private Image[] numbers;
+    private static Image[] numbers;
 
     /**
      * arrow/dice pix
      */
-    private Image arrowR;
-    private Image arrowL;
-    private Image[] dice;
+    private static Image arrowR;
+    private static Image arrowL;
+    private static Image[] dice;
 
     /**
      * Old pointer coords for interface
@@ -237,12 +239,6 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
 
         int i;
 
-        hexes = new Image[13];
-        numbers = new Image[10];
-        ports = new Image[7];
-
-        dice = new Image[14];
-
         // init coord holders
         ptrOldX = 0;
         ptrOldY = 0;
@@ -313,8 +309,8 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
         this.addMouseListener(this);
         this.addMouseMotionListener(this);
 
-        // load the images
-        loadImages(pi.getClient().isStandalone());
+        // load the static images
+        loadImages(this);
     }
 
     private final void initEdgeMapAux(int x1, int y1, int x2, int y2, int startHex)
@@ -592,14 +588,6 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
     }
 
     /**
-     * Needed because it's a component
-     */
-    public void addNotify()
-    {
-        super.addNotify();
-    }
-
-    /**
      * DOCUMENT ME!
      *
      * @return DOCUMENT ME!
@@ -620,19 +608,23 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
     }
 
     /**
-     * DOCUMENT ME!
-     *
-     * @param g DOCUMENT ME!
+     * Redraw the board using double buffering. Don't call this directly, use
+     * {@link Component#repaint()} instead.
      */
     public void paint(Graphics g)
     {
+        if (buffer == null)
+        {
+            buffer = this.createImage(panelx, panely);
+        }
+        drawBoard(buffer.getGraphics());
+        buffer.flush();
         g.drawImage(buffer, 0, 0, this);
     }
 
     /**
-     * DOCUMENT ME!
-     *
-     * @param g DOCUMENT ME!
+     * Overriden so the peer isn't painted, which clears background. Don't call
+     * this directly, use {@link Component#repaint()} instead.
      */
     public void update(Graphics g)
     {
@@ -872,7 +864,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
     /**
      * draw the whole board
      */
-    public void drawBoard(Graphics g)
+    private void drawBoard(Graphics g)
     {
         g.setPaintMode();
 
@@ -1009,34 +1001,6 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
     }
 
     /**
-     * draw method
-     */
-    public final void draw()
-    {
-        if (buffer == null)
-        {
-            buffer = this.createImage(panelx, panely);
-        }
-
-        drawBoard(buffer.getGraphics());
-    }
-
-    /**
-     * force a redraw
-     */
-    public final void forceRedraw()
-    {
-        if (buffer == null)
-        {
-            buffer = this.createImage(panelx, panely);
-        }
-
-        drawBoard(buffer.getGraphics());
-        buffer.flush();
-        paint(this.getGraphics());
-    }
-
-    /**
      * update the type of interaction mode
      */
     public void updateMode()
@@ -1164,7 +1128,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
         if (mode != NONE)
         {
             hilight = 0;
-            forceRedraw();
+            repaint();
         }
     }
 
@@ -1208,7 +1172,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
                 if (hilight != edgeNum)
                 {
                     hilight = edgeNum;
-                    forceRedraw();
+                    repaint();
                 }
             }
 
@@ -1233,7 +1197,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
                 if (hilight != edgeNum)
                 {
                     hilight = edgeNum;
-                    forceRedraw();
+                    repaint();
                 }
             }
 
@@ -1259,7 +1223,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
                 if (hilight != nodeNum)
                 {
                     hilight = nodeNum;
-                    forceRedraw();
+                    repaint();
                 }
             }
 
@@ -1284,7 +1248,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
                 if (hilight != nodeNum)
                 {
                     hilight = nodeNum;
-                    forceRedraw();
+                    repaint();
                 }
             }
 
@@ -1309,7 +1273,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
                 if (hilight != hexNum)
                 {
                     hilight = hexNum;
-                    forceRedraw();
+                    repaint();
                 }
             }
 
@@ -1332,7 +1296,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
                 if (hilight != nodeNum)
                 {
                     hilight = nodeNum;
-                    forceRedraw();
+                    repaint();
                 }
             }
 
@@ -1358,7 +1322,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
                 if (hilight != edgeNum)
                 {
                     hilight = edgeNum;
-                    forceRedraw();
+                    repaint();
                 }
             }
 
@@ -1384,7 +1348,7 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
                 if (hilight != nodeNum)
                 {
                     hilight = nodeNum;
-                    forceRedraw();
+                    repaint();
                 }
             }
 
@@ -1594,138 +1558,83 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
      * we need to know if this board is in an applet
      * or an application
      */
-    public void loadImages(boolean standalone)
+    private static synchronized void loadImages(Component c)
     {
-        MediaTracker tracker;
-        int i;
-
-        tracker = new MediaTracker(this);
-
-        SOCPlayerClient client = playerInterface.getClient();
-
-        if (standalone)
+        if (hexes == null)
         {
-            hexes[0] = getToolkit().getImage(IMAGEDIR + "/desertHex.gif");
-            hexes[1] = getToolkit().getImage(IMAGEDIR + "/clayHex.gif");
-            hexes[2] = getToolkit().getImage(IMAGEDIR + "/oreHex.gif");
-            hexes[3] = getToolkit().getImage(IMAGEDIR + "/sheepHex.gif");
-            hexes[4] = getToolkit().getImage(IMAGEDIR + "/wheatHex.gif");
-            hexes[5] = getToolkit().getImage(IMAGEDIR + "/woodHex.gif");
-            hexes[6] = getToolkit().getImage(IMAGEDIR + "/waterHex.gif");
-        }
-        else
-        {
-            hexes[0] = client.getImage(client.getCodeBase(), IMAGEDIR + "/desertHex.gif");
-            hexes[1] = client.getImage(client.getCodeBase(), IMAGEDIR + "/clayHex.gif");
-            hexes[2] = client.getImage(client.getCodeBase(), IMAGEDIR + "/oreHex.gif");
-            hexes[3] = client.getImage(client.getCodeBase(), IMAGEDIR + "/sheepHex.gif");
-            hexes[4] = client.getImage(client.getCodeBase(), IMAGEDIR + "/wheatHex.gif");
-            hexes[5] = client.getImage(client.getCodeBase(), IMAGEDIR + "/woodHex.gif");
-            hexes[6] = client.getImage(client.getCodeBase(), IMAGEDIR + "/waterHex.gif");
-        }
+            MediaTracker tracker = new MediaTracker(c);
+            Toolkit tk = c.getToolkit();
+            Class clazz = c.getClass();
+        
+            hexes = new Image[13];
+            numbers = new Image[10];
+            ports = new Image[7];
 
-        for (i = 0; i < 7; i++)
-        {
-            tracker.addImage(hexes[i], 0);
-        }
+            dice = new Image[14];
 
-        for (i = 0; i < 6; i++)
-        {
-            if (standalone)
+            hexes[0] = tk.getImage(clazz.getResource(IMAGEDIR + "/desertHex.gif"));
+            hexes[1] = tk.getImage(clazz.getResource(IMAGEDIR + "/clayHex.gif"));
+            hexes[2] = tk.getImage(clazz.getResource(IMAGEDIR + "/oreHex.gif"));
+            hexes[3] = tk.getImage(clazz.getResource(IMAGEDIR + "/sheepHex.gif"));
+            hexes[4] = tk.getImage(clazz.getResource(IMAGEDIR + "/wheatHex.gif"));
+            hexes[5] = tk.getImage(clazz.getResource(IMAGEDIR + "/woodHex.gif"));
+            hexes[6] = tk.getImage(clazz.getResource(IMAGEDIR + "/waterHex.gif"));
+
+            for (int i = 0; i < 7; i++)
             {
-                hexes[i + 7] = getToolkit().getImage(IMAGEDIR + "/miscPort" + i + ".gif");
-            }
-            else
-            {
-                hexes[i + 7] = client.getImage(client.getCodeBase(), IMAGEDIR + "/miscPort" + i + ".gif");
+                tracker.addImage(hexes[i], 0);
             }
 
-            tracker.addImage(hexes[i + 7], 0);
-        }
-
-        for (i = 0; i < 6; i++)
-        {
-            if (standalone)
+            for (int i = 0; i < 6; i++)
             {
-                ports[i + 1] = getToolkit().getImage(IMAGEDIR + "/port" + i + ".gif");
-            }
-            else
-            {
-                ports[i + 1] = client.getImage(client.getCodeBase(), IMAGEDIR + "/port" + i + ".gif");
+                hexes[i + 7] = tk.getImage(clazz.getResource(IMAGEDIR + "/miscPort" + i + ".gif"));
+                tracker.addImage(hexes[i + 7], 0);
             }
 
-            tracker.addImage(ports[i + 1], 0);
-        }
-
-        if (standalone)
-        {
-            numbers[0] = getToolkit().getImage(IMAGEDIR + "/two.gif");
-            numbers[1] = getToolkit().getImage(IMAGEDIR + "/three.gif");
-            numbers[2] = getToolkit().getImage(IMAGEDIR + "/four.gif");
-            numbers[3] = getToolkit().getImage(IMAGEDIR + "/five.gif");
-            numbers[4] = getToolkit().getImage(IMAGEDIR + "/six.gif");
-            numbers[5] = getToolkit().getImage(IMAGEDIR + "/eight.gif");
-            numbers[6] = getToolkit().getImage(IMAGEDIR + "/nine.gif");
-            numbers[7] = getToolkit().getImage(IMAGEDIR + "/ten.gif");
-            numbers[8] = getToolkit().getImage(IMAGEDIR + "/eleven.gif");
-            numbers[9] = getToolkit().getImage(IMAGEDIR + "/twelve.gif");
-
-            arrowL = getToolkit().getImage(IMAGEDIR + "/arrowL.gif");
-            arrowR = getToolkit().getImage(IMAGEDIR + "/arrowR.gif");
-        }
-        else
-        {
-            numbers[0] = client.getImage(client.getCodeBase(), IMAGEDIR + "/two.gif");
-            numbers[1] = client.getImage(client.getCodeBase(), IMAGEDIR + "/three.gif");
-            numbers[2] = client.getImage(client.getCodeBase(), IMAGEDIR + "/four.gif");
-            numbers[3] = client.getImage(client.getCodeBase(), IMAGEDIR + "/five.gif");
-            numbers[4] = client.getImage(client.getCodeBase(), IMAGEDIR + "/six.gif");
-            numbers[5] = client.getImage(client.getCodeBase(), IMAGEDIR + "/eight.gif");
-            numbers[6] = client.getImage(client.getCodeBase(), IMAGEDIR + "/nine.gif");
-            numbers[7] = client.getImage(client.getCodeBase(), IMAGEDIR + "/ten.gif");
-            numbers[8] = client.getImage(client.getCodeBase(), IMAGEDIR + "/eleven.gif");
-            numbers[9] = client.getImage(client.getCodeBase(), IMAGEDIR + "/twelve.gif");
-
-            arrowL = client.getImage(client.getCodeBase(), IMAGEDIR + "/arrowL.gif");
-            arrowR = client.getImage(client.getCodeBase(), IMAGEDIR + "/arrowR.gif");
-        }
-
-        tracker.addImage(arrowL, 0);
-        tracker.addImage(arrowR, 0);
-
-        for (i = 2; i < 13; i++)
-        {
-            if (standalone)
+            for (int i = 0; i < 6; i++)
             {
-                dice[i] = getToolkit().getImage(IMAGEDIR + "/dice" + i + ".gif");
-            }
-            else
-            {
-                dice[i] = client.getImage(client.getCodeBase(), IMAGEDIR + "/dice" + i + ".gif");
+                ports[i + 1] = tk.getImage(clazz.getResource(IMAGEDIR + "/port" + i + ".gif"));
+                tracker.addImage(ports[i + 1], 0);
             }
 
-            tracker.addImage(dice[i], 0);
-        }
+            numbers[0] = tk.getImage(clazz.getResource(IMAGEDIR + "/two.gif"));
+            numbers[1] = tk.getImage(clazz.getResource(IMAGEDIR + "/three.gif"));
+            numbers[2] = tk.getImage(clazz.getResource(IMAGEDIR + "/four.gif"));
+            numbers[3] = tk.getImage(clazz.getResource(IMAGEDIR + "/five.gif"));
+            numbers[4] = tk.getImage(clazz.getResource(IMAGEDIR + "/six.gif"));
+            numbers[5] = tk.getImage(clazz.getResource(IMAGEDIR + "/eight.gif"));
+            numbers[6] = tk.getImage(clazz.getResource(IMAGEDIR + "/nine.gif"));
+            numbers[7] = tk.getImage(clazz.getResource(IMAGEDIR + "/ten.gif"));
+            numbers[8] = tk.getImage(clazz.getResource(IMAGEDIR + "/eleven.gif"));
+            numbers[9] = tk.getImage(clazz.getResource(IMAGEDIR + "/twelve.gif"));
 
-        for (i = 0; i < 10; i++)
-        {
-            tracker.addImage(numbers[i], 0);
-        }
+            for (int i = 0; i < 10; i++)
+            {
+                tracker.addImage(numbers[i], 0);
+            }
 
-        try
-        {
-            tracker.waitForID(0);
-        }
-        catch (InterruptedException e)
-        {
-            ;
-        }
+            arrowL = tk.getImage(clazz.getResource(IMAGEDIR + "/arrowL.gif"));
+            arrowR = tk.getImage(clazz.getResource(IMAGEDIR + "/arrowR.gif"));
 
-        if (tracker.isErrorID(0))
-        {
-            System.out.println("Error loading images");
+            tracker.addImage(arrowL, 0);
+            tracker.addImage(arrowR, 0);
 
-            return;
+            for (int i = 2; i < 13; i++)
+            {
+                dice[i] = tk.getImage(clazz.getResource(IMAGEDIR + "/dice" + i + ".gif"));
+                tracker.addImage(dice[i], 0);
+            }
+
+            try
+            {
+                tracker.waitForID(0);
+            }
+            catch (InterruptedException e) {}
+
+            if (tracker.isErrorID(0))
+            {
+                System.out.println("Error loading board images");
+            }
         }
     }
 
