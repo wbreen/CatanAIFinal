@@ -44,6 +44,16 @@ public class IntPair
     }
 
     /**
+     * returns a hash code for the object
+     *
+     * @return the hash code
+     */
+    public int hashCode()
+    {
+        return a ^ b;
+    }
+    
+    /**
      * DOCUMENT ME!
      *
      * @param ip DOCUMENT ME!

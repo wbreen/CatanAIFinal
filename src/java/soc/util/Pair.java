@@ -44,6 +44,16 @@ public class Pair
     }
 
     /**
+     * returns a hash code for the object
+     *
+     * @return the hash code
+     */
+    public int hashCode()
+    {
+        return ((a == null) ? 0 : a.hashCode()) ^ ((b == null) ? 0 : b.hashCode());
+    }
+    
+    /**
      * DOCUMENT ME!
      *
      * @param ip DOCUMENT ME!
