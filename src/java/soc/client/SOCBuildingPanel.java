@@ -83,6 +83,7 @@ public class SOCBuildingPanel extends Panel implements ActionListener
     public SOCBuildingPanel(SOCPlayerInterface pi)
     {
         super();
+        setLayout(null);
 
         this.pi = pi;
 
@@ -164,8 +165,6 @@ public class SOCBuildingPanel extends Panel implements ActionListener
         add(cardBut);
         cardBut.setActionCommand(CARD);
         cardBut.addActionListener(this);
-
-        setLayout(null);
     }
 
     /**
@@ -201,11 +200,9 @@ public class SOCBuildingPanel extends Panel implements ActionListener
         curX = 1 + costW + 3;
         roadWood.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         roadWood.setLocation(curX, curY);
-        roadWood.draw();
         curX += (ColorSquare.WIDTH + 3);
         roadClay.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         roadClay.setLocation(curX, curY);
-        roadClay.draw();
         roadBut.setSize(butW, lineH);
         roadBut.setLocation(dim.width - (butW + margin), curY);
         curY += (rowSpaceH + lineH);
@@ -222,19 +219,15 @@ public class SOCBuildingPanel extends Panel implements ActionListener
         curX = 1 + costW + 3;
         settlementWood.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         settlementWood.setLocation(curX, curY);
-        settlementWood.draw();
         curX += (ColorSquare.WIDTH + 3);
         settlementClay.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         settlementClay.setLocation(curX, curY);
-        settlementClay.draw();
         curX += (ColorSquare.WIDTH + 3);
         settlementWheat.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         settlementWheat.setLocation(curX, curY);
-        settlementWheat.draw();
         curX += (ColorSquare.WIDTH + 3);
         settlementSheep.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         settlementSheep.setLocation(curX, curY);
-        settlementSheep.draw();
         settlementBut.setSize(butW, lineH);
         settlementBut.setLocation(dim.width - (butW + margin), curY);
         curY += (rowSpaceH + lineH);
@@ -251,11 +244,9 @@ public class SOCBuildingPanel extends Panel implements ActionListener
         curX = 1 + costW + 3;
         cityWheat.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         cityWheat.setLocation(curX, curY);
-        cityWheat.draw();
         curX += (ColorSquare.WIDTH + 3);
         cityOre.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         cityOre.setLocation(curX, curY);
-        cityOre.draw();
         cityBut.setSize(butW, lineH);
         cityBut.setLocation(dim.width - (butW + margin), curY);
         curY += (rowSpaceH + lineH);
@@ -272,15 +263,12 @@ public class SOCBuildingPanel extends Panel implements ActionListener
         curX = 1 + costW + 3;
         cardWheat.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         cardWheat.setLocation(curX, curY);
-        cardWheat.draw();
         curX += (ColorSquare.WIDTH + 3);
         cardSheep.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         cardSheep.setLocation(curX, curY);
-        cardSheep.draw();
         curX += (ColorSquare.WIDTH + 3);
         cardOre.setSize(ColorSquare.WIDTH, ColorSquare.HEIGHT);
         cardOre.setLocation(curX, curY);
-        cardOre.draw();
         cardBut.setSize(butW, lineH);
         cardBut.setLocation(dim.width - (butW + margin), curY);
     }

@@ -71,7 +71,7 @@ class SOCDiscardDialog extends Dialog implements ActionListener, MouseListener
         discardBut = new Button("Discard");
 
         setLayout(null);
-        addNotify();
+        
         setSize(280, 190);
 
         msg = new Label("Please discard " + Integer.toString(numDiscards) + " resources.", Label.CENTER);
@@ -176,10 +176,8 @@ class SOCDiscardDialog extends Dialog implements ActionListener, MouseListener
             {
                 keep[i].setSize(sqwidth, sqwidth);
                 keep[i].setLocation((i * sqspace) + ((width - ((3 * sqspace) + (4 * sqwidth))) / 2), keepY);
-                keep[i].draw();
                 disc[i].setSize(sqwidth, sqwidth);
                 disc[i].setLocation((i * sqspace) + ((width - ((3 * sqspace) + (4 * sqwidth))) / 2), discY);
-                disc[i].draw();
             }
         }
         catch (NullPointerException e) {}
