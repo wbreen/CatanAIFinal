@@ -33,7 +33,7 @@ import java.util.Vector;
 
 
 /** a general purpose server
- *  @version 1.5
+ *  @version 1.6
  *  Original author: <A HREF="http://www.nada.kth.se/~cristi">Cristian Bogdan</A>
  *  Lots of mods by Robert S. Thomas and Jay Budzik
  *  This is the real stuff. Server subclasses won't have to care about
@@ -41,103 +41,113 @@ import java.util.Vector;
  */
 public abstract class Server extends Thread implements Serializable, Cloneable
 {
-    ServerSocket ss;
-    boolean up = false;
     protected Exception error = null;
-    protected int port;
+    
+    private int port;
+    private ServerSocket ss;
+    private boolean connected = false;
 
-    /**
-     * total number of connections made
-     */
-    protected int numberOfConnections;
+    /** total number of connections made */
+    private int connectionsMade = 0;
 
     /** the connections */
-    protected Vector conns = new Vector();
-    public Vector inQueue = new Vector();
+    private Vector conns = new Vector();
+    private Vector inQueue = new Vector();
 
-    /** start listening to the given port */
+    /** Updated when logging time-stamps are needed (in synchronized blocks) */
+    private Date date = new Date();
+    
+    /**
+     * Create a server to listen on the specified port.
+     */
     public Server(int port)
     {
         this.port = port;
-        numberOfConnections = 0;
-
-        try
-        {
-            ss = new ServerSocket(port);
-        }
-        catch (IOException e)
-        {
-            System.err.println("Could not listen to port " + port + ": " + e);
-            error = e;
-        }
     }
 
+    /** This is dangerous in a threaded environment like this! */
     protected Enumeration getConnections()
     {
         return conns.elements();
     }
 
-    protected synchronized int connectionCount()
+    public int connectionCount()
     {
         return conns.size();
     }
 
-    protected synchronized boolean isUp()
+    public int connectionsMade()
     {
-        return up;
+        return connectionsMade;
     }
 
-    /** run method for Server */
+    public int getPort()
+    {
+        return port;
+    }
+
     public void run()
     {
-        Treater treater = new Treater(this);
-        treater.start();
+        connected = true;
 
-        if (error != null)
-        {
-            return;
-        }
+        new Treater().start();
 
-        up = true;
-
-        while (isUp())
+        // keep listening on socket, accepting connections until listening
+        // fails, or the server is explicitly stopped.  When accepting a
+        // connection causes error, close the socket and reopen another.
+        while (connected)
         {
             try
             {
-                while (isUp())
-                {
-                    // we could limit the number of accepted connections here
-                    Connection con = new Connection(ss.accept(), this);
-                    con.start();
-
-                    //addConnection(new Connection());
-                }
-            }
-            catch (IOException e)
-            {
-                error = e;
-                D.ebugPrintln("Exception " + e + " during accept");
-
-                //System.out.println("STOPPING SERVER");
-                //stopServer();
-            }
-
-            try
-            {
-                ss.close();
                 ss = new ServerSocket(port);
+
+                try
+                {
+                    while (connected)
+                    {
+                        // could limit the number of accepted connections here
+                        addConnection(new Connection(ss.accept(), this));
+                    }
+                }
+                catch (IOException e)
+                {
+                    error = e;
+                    D.ebugPrintln("Exception " + e + " during accept");
+                }
+
+                ss.close();
             }
             catch (IOException e)
             {
                 System.err.println("Could not listen to port " + port + ": " + e);
-                up = false;
+                connected = false;
                 error = e;
             }
         }
     }
 
-    /** treat a request from the given connection */
-    public void treat(String s, Connection c)
+    /**
+     * Implemented in subclasses to take action on an incoming command.
+     *
+     * @param str the command read from the connection
+     * @param con the connection
+     */
+    abstract protected void processCommand(String str, Connection con);
+
+    /** Placeholder for doing things when server shuts down */
+    protected void serverDown() {}
+
+    /** Placeholder for doing things when a new connection comes */
+    protected void newConnection(Connection c) {}
+
+    /** Placeholder for doing things when a connection is closed */
+    protected void leaveConnection(Connection c) {}
+
+    /**
+     * Treat a request from the given connection. Called only by {@link
+     * Connection}.
+     */
+    protected void treat(String s, Connection c)
     {
         synchronized (inQueue)
         {
@@ -147,28 +157,11 @@ public abstract class Server extends Thread implements Serializable, Cloneable
     }
 
     /**
-     * DOCUMENT ME!
-     *
-     * @param str DOCUMENT ME!
-     * @param con DOCUMENT ME!
+     * Disconnect all the connections, and stop accepting any more.
      */
-    abstract public void processCommand(String str, Connection con);
-
-    /** placeholder for doing things when server gets down */
-    protected void serverDown() {}
-
-    /** placeholder for doing things when a new connection comes */
-    protected void newConnection(Connection c) {}
-
-    /** placeholder for doing things when a connection is closed */
-    protected void leaveConnection(Connection c) {}
-
-    /** The server is being stopped, disconnect all the connections.
-     * Currently nobody calls this.
-     */
-    public synchronized void stopServer()
+    public final synchronized void stopServer()
     {
-        up = false;
+        connected = false;
         serverDown();
 
         for (Enumeration e = conns.elements(); e.hasMoreElements();)
@@ -179,37 +172,10 @@ public abstract class Server extends Thread implements Serializable, Cloneable
         conns.removeAllElements();
     }
 
-    /** remove a connection from the system */
-    protected synchronized void removeConnection(Connection c)
-    {
-        //conns.removeElement(c);
-        if (!conns.removeElement(c))
-        {
-            return;
-        }
-
-        c.disconnect();
-        leaveConnection(c);
-        D.ebugPrintln(c.host() + " left (" + connectionCount() + ")  " + (new Date()).toString() + ((c.error != null) ? (": " + c.error.toString()) : ""));
-    }
-
-    /** do cleanup after a remove connection */
-    protected void removeConnectionCleanup(Connection c) {}
-
-    /** add a connection to the system */
-    protected synchronized void addConnection(Connection c)
-    {
-        if (c.connect())
-        {
-            numberOfConnections++;
-            newConnection(c);
-            conns.addElement(c);
-            D.ebugPrintln(c.host() + " came (" + connectionCount() + ")  " + (new Date()).toString());
-        }
-    }
-
-    /** broadcast a message */
-    protected synchronized void broadcast(String m)
+    /**
+     * Broadcast a message to all active clients.
+     */
+    protected final synchronized void broadcast(String m)
     {
         for (Enumeration e = getConnections(); e.hasMoreElements();)
         {
@@ -217,7 +183,46 @@ public abstract class Server extends Thread implements Serializable, Cloneable
         }
     }
 
-    class Command
+    /**
+     * Remove a connection from the system.
+     */
+    protected final synchronized void removeConnection(Connection c)
+    {
+        if (conns.removeElement(c))
+        {
+            c.disconnect();
+            leaveConnection(c);
+            if (D.ebugOn)
+            {
+                date.setTime(System.currentTimeMillis());
+                D.ebugPrintln(c.host() + " left (" + connectionCount() + ")  " + date
+                              + ((c.error != null) ? (": " + c.error) : ""));
+            }
+        }
+    }
+
+    /**
+     * Add a connection to the system.
+     */
+    private synchronized void addConnection(Connection c)
+    {
+        if (c.connect())
+        {
+            connectionsMade++;
+            conns.addElement(c);
+            newConnection(c);
+            if (D.ebugOn)
+            {
+                date.setTime(System.currentTimeMillis());
+                D.ebugPrintln(c.host() + " came (" + connectionCount() + ")  " + date);
+            }
+        }
+    }
+
+    /**
+     * Wraper for a command and the connection to send it out on.
+     */
+    private class Command
     {
         public String str;
         public Connection con;
@@ -229,64 +234,55 @@ public abstract class Server extends Thread implements Serializable, Cloneable
         }
     }
 
-    class Treater extends Thread
+    /**
+     * Thread to dequeue commands (queued by the Connection) and process them.
+     */
+    private class Treater extends Thread
     {
-        Server svr;
-
-        public Treater(Server s)
+        public Treater()
         {
-            svr = s;
+            setDaemon(true);
         }
 
         public void run()
         {
-            while (svr.isUp())
+            while (connected)
             {
-                //D.ebugPrintln("treater server is up");
-                Command c = null;
+                Command command = null;
 
                 synchronized (inQueue)
                 {
-                    if (inQueue.size() > 0)
+                    while (inQueue.size() == 0 && connected)
                     {
-                        //D.ebugPrintln("treater getting command");
-                        c = (Command) inQueue.elementAt(0);
+                        try
+                        {
+                            inQueue.wait();
+                        }
+                        catch (InterruptedException x) //what might cause this?
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+                    
+                    if (connected)
+                    {
+                        command = (Command) inQueue.elementAt(0);
                         inQueue.removeElementAt(0);
                     }
                 }
 
-                try
+                if (command != null)
                 {
-                    if (c != null)
+                    try
                     {
-                        svr.processCommand(c.str, c.con);
+                        processCommand(command.str, command.con);
                     }
-                }
-                catch (Exception e)
-                {
-                    System.out.println("Exception in treater (processCommand) - " + e);
-                }
-
-                yield();
-
-                synchronized (inQueue)
-                {
-                    if (inQueue.size() == 0)
+                    catch (Exception e)
                     {
-                        try
-                        {
-                            //D.ebugPrintln("treater waiting");
-                            inQueue.wait(1000);
-                        }
-                        catch (Exception ex)
-                        {
-                            ;
-                        }
+                        e.printStackTrace();
                     }
                 }
             }
-
-            //D.ebugPrintln("treater returning; server not up");
         }
     }
 }
