@@ -55,20 +55,22 @@ import java.util.Calendar;
 public class SOCDBHelper
 {
     private static Connection connection = null;
-    private static PreparedStatement _preparedStatementForCreateAccountCommand = null;
-    private static String sCreateAccountCommand = "INSERT INTO users VALUES (?,?,?,?,?);";
-    private static PreparedStatement _preparedStatementForRecordLoginCommand = null;
-    private static String sRecordLoginCommand = "INSERT INTO logins VALUES (?,?,?);";
-    private static PreparedStatement _preparedStatementForUserPasswordQuery = null;
-    private static String sUserPasswordQuery = "SELECT password FROM users WHERE ( users.nickname = ? );";
-    private static PreparedStatement _preparedStatementForHostQuery = null;
-    private static String sHostQuery = "SELECT nickname FROM users WHERE ( users.host = ? );";
-    private static PreparedStatement _preparedStatementForLastloginUpdate = null;
-    private static String sLastloginUpdate = "UPDATE users SET lastlogin = ?  WHERE nickname = ? ;";
-    private static PreparedStatement _preparedStatementForSaveGameCommand = null;
-    private static String sSaveGameCommand = "INSERT INTO games VALUES (?,?,?,?,?,?,?,?,?,?);";
-    private static PreparedStatement _preparedStatementForRobotParamsQuery = null;
-    private static String sRobotParamsQuery = "SELECT * FROM robotparams WHERE robotname = ?;";
+    
+    private static String CREATE_ACCOUNT_COMMAND = "INSERT INTO users VALUES (?,?,?,?,?);";
+    private static String RECORD_LOGIN_COMMAND = "INSERT INTO logins VALUES (?,?,?);";
+    private static String USER_PASSWORD_QUERY = "SELECT password FROM users WHERE ( users.nickname = ? );";
+    private static String HOST_QUERY = "SELECT nickname FROM users WHERE ( users.host = ? );";
+    private static String LASTLOGIN_UPDATE = "UPDATE users SET lastlogin = ?  WHERE nickname = ? ;";
+    private static String SAVE_GAME_COMMAND = "INSERT INTO games VALUES (?,?,?,?,?,?,?,?,?,?);";
+    private static String ROBOT_PARAMS_QUERY = "SELECT * FROM robotparams WHERE robotname = ?;";
+
+    private static PreparedStatement createAccountCommand = null;
+    private static PreparedStatement recordLoginCommand = null;
+    private static PreparedStatement userPasswordQuery = null;
+    private static PreparedStatement hostQuery = null;
+    private static PreparedStatement lastloginUpdate = null;
+    private static PreparedStatement saveGameCommand = null;
+    private static PreparedStatement robotParamsQuery = null;
 
     /**
      * Closes the current conection to the database, opens a new one,
@@ -79,28 +81,8 @@ public class SOCDBHelper
      */
     public static void reconnect(String user, String pswd) throws SQLException
     {
-        try
-        {
-            cleanup();
-
-            String url = "jdbc:mysql://localhost/socdata";
-
-            connection = DriverManager.getConnection(url, user, pswd);
-
-            // prepare PreparedStatements for queries
-            _preparedStatementForCreateAccountCommand = connection.prepareStatement(sCreateAccountCommand);
-            _preparedStatementForRecordLoginCommand = connection.prepareStatement(sRecordLoginCommand);
-            _preparedStatementForUserPasswordQuery = connection.prepareStatement(sUserPasswordQuery);
-            _preparedStatementForHostQuery = connection.prepareStatement(sHostQuery);
-            _preparedStatementForLastloginUpdate = connection.prepareStatement(sLastloginUpdate);
-            _preparedStatementForSaveGameCommand = connection.prepareStatement(sSaveGameCommand);
-            _preparedStatementForRobotParamsQuery = connection.prepareStatement(sRobotParamsQuery);
-        }
-        catch (java.lang.Exception ex)
-        {
-            // Got some other type of exception.  Dump it.
-            ex.printStackTrace();
-        }
+        cleanup();
+        prepareStatements(user, pswd);
     }
 
     /**
@@ -109,38 +91,56 @@ public class SOCDBHelper
      *
      * @param user  the user name for accessing the database
      * @param pswd  the password for the user
+     * @throws SQLException if an SQL command fails, or the db couldn't be
+     * initialied
      */
     public static void initialize(String user, String pswd) throws SQLException
     {
         try
         {
-            // Load the mysql driver
+            // Load the mysql driver. Revisit exceptions when /any/ JDBC allowed
             Class.forName("org.gjt.mm.mysql.Driver").newInstance();
-
-            String url = "jdbc:mysql://localhost/socdata";
-
-            connection = DriverManager.getConnection(url, user, pswd);
-
-            // prepare PreparedStatements for queries
-            _preparedStatementForCreateAccountCommand = connection.prepareStatement(sCreateAccountCommand);
-            _preparedStatementForRecordLoginCommand = connection.prepareStatement(sRecordLoginCommand);
-            _preparedStatementForUserPasswordQuery = connection.prepareStatement(sUserPasswordQuery);
-            _preparedStatementForHostQuery = connection.prepareStatement(sHostQuery);
-            _preparedStatementForLastloginUpdate = connection.prepareStatement(sLastloginUpdate);
-            _preparedStatementForSaveGameCommand = connection.prepareStatement(sSaveGameCommand);
-            _preparedStatementForRobotParamsQuery = connection.prepareStatement(sRobotParamsQuery);
         }
-        catch (ClassNotFoundException cnfE)
+        catch (ClassNotFoundException x)
         {
-            throw new SQLException(cnfE.toString());
+            SQLException sx =
+                new SQLException("MySQL driver (required) is unavailable");
+            sx.initCause(x);
+            throw sx;
         }
-        catch (java.lang.Exception ex)
+        catch (Exception x) // everything else
         {
-            // Got some other type of exception.  Dump it.
-            ex.printStackTrace();
+            // InstantiationException & IllegalAccessException
+            // should not be possible  for org.gjt.mm.mysql.Driver
+            // ClassNotFound
+            SQLException sx = new SQLException("Unable to initialize MySQL");
+            sx.initCause(x);
+            throw sx;
         }
+
+        prepareStatements(user, pswd);
     }
 
+    /**
+     * Reconnect and connect use this to get ready.
+     */
+    private static void prepareStatements(String user, String pswd)
+        throws SQLException
+    {
+        String url = "jdbc:mysql://localhost/socdata";
+
+        connection = DriverManager.getConnection(url, user, pswd);
+
+        // prepare PreparedStatements for queries
+        createAccountCommand = connection.prepareStatement(CREATE_ACCOUNT_COMMAND);
+        recordLoginCommand = connection.prepareStatement(RECORD_LOGIN_COMMAND);
+        userPasswordQuery = connection.prepareStatement(USER_PASSWORD_QUERY);
+        hostQuery = connection.prepareStatement(HOST_QUERY);
+        lastloginUpdate = connection.prepareStatement(LASTLOGIN_UPDATE);
+        saveGameCommand = connection.prepareStatement(SAVE_GAME_COMMAND);
+        robotParamsQuery = connection.prepareStatement(ROBOT_PARAMS_QUERY);
+    }
+    
     /**
      * DOCUMENT ME!
      *
@@ -163,10 +163,10 @@ public class SOCDBHelper
         try
         {
             // fill in the data values to the Prepared statement
-            _preparedStatementForUserPasswordQuery.setString(1, sUserName);
+            userPasswordQuery.setString(1, sUserName);
 
             // execute the Query
-            ResultSet resultSet = _preparedStatementForUserPasswordQuery.executeQuery();
+            ResultSet resultSet = userPasswordQuery.executeQuery();
 
             if (!resultSet.next())
             {
@@ -211,10 +211,10 @@ public class SOCDBHelper
         try
         {
             // fill in the data values to the Prepared statement
-            _preparedStatementForHostQuery.setString(1, host);
+            hostQuery.setString(1, host);
 
             // execute the Query
-            ResultSet resultSet = _preparedStatementForHostQuery.executeQuery();
+            ResultSet resultSet = hostQuery.executeQuery();
 
             if (!resultSet.next())
             {
@@ -264,14 +264,14 @@ public class SOCDBHelper
             Calendar cal = Calendar.getInstance();
 
             // fill in the data values to the Prepared statement
-            _preparedStatementForCreateAccountCommand.setString(1, userName);
-            _preparedStatementForCreateAccountCommand.setString(2, host);
-            _preparedStatementForCreateAccountCommand.setString(3, password);
-            _preparedStatementForCreateAccountCommand.setString(4, email);
-            _preparedStatementForCreateAccountCommand.setDate(5, sqlDate, cal);
+            createAccountCommand.setString(1, userName);
+            createAccountCommand.setString(2, host);
+            createAccountCommand.setString(3, password);
+            createAccountCommand.setString(4, email);
+            createAccountCommand.setDate(5, sqlDate, cal);
 
             // execute the Command
-            _preparedStatementForCreateAccountCommand.executeQuery();
+            createAccountCommand.executeQuery();
         }
         catch (SQLException sqlE)
         {
@@ -307,12 +307,12 @@ public class SOCDBHelper
             Calendar cal = Calendar.getInstance();
 
             // fill in the data values to the Prepared statement
-            _preparedStatementForRecordLoginCommand.setString(1, userName);
-            _preparedStatementForRecordLoginCommand.setString(2, host);
-            _preparedStatementForRecordLoginCommand.setDate(3, sqlDate, cal);
+            recordLoginCommand.setString(1, userName);
+            recordLoginCommand.setString(2, host);
+            recordLoginCommand.setDate(3, sqlDate, cal);
 
             // execute the Command
-            _preparedStatementForRecordLoginCommand.executeQuery();
+            recordLoginCommand.executeQuery();
         }
         catch (SQLException sqlE)
         {
@@ -347,11 +347,11 @@ public class SOCDBHelper
             Calendar cal = Calendar.getInstance();
 
             // fill in the data values to the Prepared statement
-            _preparedStatementForLastloginUpdate.setDate(1, sqlDate, cal);
-            _preparedStatementForLastloginUpdate.setString(2, userName);
+            lastloginUpdate.setDate(1, sqlDate, cal);
+            lastloginUpdate.setString(2, userName);
 
             // execute the Command
-            _preparedStatementForLastloginUpdate.executeQuery();
+            lastloginUpdate.executeQuery();
         }
         catch (SQLException sqlE)
         {
@@ -391,19 +391,19 @@ public class SOCDBHelper
         try
         {
             // fill in the data values to the Prepared statement
-            _preparedStatementForSaveGameCommand.setString(1, gameName);
-            _preparedStatementForSaveGameCommand.setString(2, player1);
-            _preparedStatementForSaveGameCommand.setString(3, player2);
-            _preparedStatementForSaveGameCommand.setString(4, player3);
-            _preparedStatementForSaveGameCommand.setString(5, player4);
-            _preparedStatementForSaveGameCommand.setShort(6, score1);
-            _preparedStatementForSaveGameCommand.setShort(7, score2);
-            _preparedStatementForSaveGameCommand.setShort(8, score3);
-            _preparedStatementForSaveGameCommand.setShort(9, score4);
-            _preparedStatementForSaveGameCommand.setTimestamp(10, new Timestamp(startTime.getTime()));
+            saveGameCommand.setString(1, gameName);
+            saveGameCommand.setString(2, player1);
+            saveGameCommand.setString(3, player2);
+            saveGameCommand.setString(4, player3);
+            saveGameCommand.setString(5, player4);
+            saveGameCommand.setShort(6, score1);
+            saveGameCommand.setShort(7, score2);
+            saveGameCommand.setShort(8, score3);
+            saveGameCommand.setShort(9, score4);
+            saveGameCommand.setTimestamp(10, new Timestamp(startTime.getTime()));
 
             // execute the Command
-            _preparedStatementForSaveGameCommand.executeQuery();
+            saveGameCommand.executeQuery();
         }
         catch (SQLException sqlE)
         {
@@ -436,10 +436,10 @@ public class SOCDBHelper
         try
         {
             // fill in the data values to the Prepared statement
-            _preparedStatementForRobotParamsQuery.setString(1, robotName);
+            robotParamsQuery.setString(1, robotName);
 
             // execute the Query
-            ResultSet resultSet = _preparedStatementForRobotParamsQuery.executeQuery();
+            ResultSet resultSet = robotParamsQuery.executeQuery();
 
             if (!resultSet.next())
             {
@@ -480,12 +480,12 @@ public class SOCDBHelper
     	{
 	        try
 	        {
-	            _preparedStatementForCreateAccountCommand.close();
-	            _preparedStatementForUserPasswordQuery.close();
-	            _preparedStatementForHostQuery.close();
-	            _preparedStatementForLastloginUpdate.close();
-	            _preparedStatementForSaveGameCommand.close();
-	            _preparedStatementForRobotParamsQuery.close();
+	            createAccountCommand.close();
+	            userPasswordQuery.close();
+	            hostQuery.close();
+	            lastloginUpdate.close();
+	            saveGameCommand.close();
+	            robotParamsQuery.close();
 	            connection.close();
 	        }
 	        catch (SQLException sqlE)
