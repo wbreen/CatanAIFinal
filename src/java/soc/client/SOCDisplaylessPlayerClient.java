@@ -98,15 +98,15 @@ import soc.message.SOCTurn;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 
 import java.util.Hashtable;
 
 
 /**
- * Applet/Standalone client for connecting to the SOCServer.
+ * GUI-less standalone client for connecting to the SOCServer.
  * If you want another connection port, you have to specify it as the "port"
  * argument in the html source. If you run this as a stand-alone, you have to
  * specify the port.
@@ -119,10 +119,6 @@ public class SOCDisplaylessPlayerClient implements Runnable
     protected String doc;
     protected String lastMessage;
 
-    /**
-     * true if this is an application
-     */
-    protected boolean standalone;
     protected String host;
     protected int port;
     protected Socket s;
@@ -164,7 +160,6 @@ public class SOCDisplaylessPlayerClient implements Runnable
     {
         host = null;
         port = 8889;
-        standalone = false;
         gotPassword = false;
     }
 
@@ -179,49 +174,6 @@ public class SOCDisplaylessPlayerClient implements Runnable
     {
         host = h;
         port = p;
-        standalone = true;
-    }
-
-    /**
-     * Translate a hex string into an integer
-     *
-     * @param s  String to be converted
-     * @return   a hex number represting the color
-     */
-    static int color(String s)
-    {
-        if (s == null)
-        {
-            return -1;
-        }
-
-        char[] c = s.trim().toLowerCase().toCharArray();
-        int rez = 0;
-
-        if (c.length > 6)
-        {
-            return -1;
-        }
-
-        for (int i = 0; i < c.length; i++)
-        {
-            rez <<= 4;
-
-            if ((c[i] >= '0') && (c[i] <= '9'))
-            {
-                rez += (c[i] - '0');
-            }
-            else if ((c[i] >= 'a') && (c[i] <= 'f'))
-            {
-                rez += ((10 + c[i]) - 'a');
-            }
-            else
-            {
-                return -1;
-            }
-        }
-
-        return rez;
     }
 
     /**
@@ -239,18 +191,15 @@ public class SOCDisplaylessPlayerClient implements Runnable
     {
         try
         {
-            try
+            while (connected)
             {
-                while (connected)
-                {
-                    String s = in.readUTF();
-                    treat((SOCMessage) SOCMessage.toMsg(s));
-                }
+                String s = in.readUTF();
+                treat((SOCMessage) SOCMessage.toMsg(s));
             }
-            catch (SocketTimeoutException ste)
-            {
-                System.err.println("Socket timeout in run: " + ste);
-            }
+        }
+        catch (InterruptedIOException x)
+        {
+            System.err.println("Socket timeout in run: " + x);
         }
         catch (IOException e)
         {
@@ -292,14 +241,11 @@ public class SOCDisplaylessPlayerClient implements Runnable
 
         try
         {
-            try
-            {
-                out.writeUTF(s);
-            }
-            catch (SocketTimeoutException ste)
-            {
-                System.err.println("Socket timeout in put: " + ste);
-            }
+            out.writeUTF(s);
+        }
+        catch (InterruptedIOException x)
+        {
+            System.err.println("Socket timeout in put: " + x);
         }
         catch (IOException e)
         {
@@ -1646,10 +1592,7 @@ public class SOCDisplaylessPlayerClient implements Runnable
     {
         connected = false;
 
-        if ((Thread.currentThread() != reader) && (reader != null) && reader.isAlive())
-        {
-            reader.stop();
-        }
+        // reader will die once 'connected' is false, and socket is closed
 
         try
         {
@@ -1939,13 +1882,5 @@ public class SOCDisplaylessPlayerClient implements Runnable
         SOCDisplaylessPlayerClient ex1 = new SOCDisplaylessPlayerClient(args[0], Integer.parseInt(args[1]), true);
 
         //ex1.init();
-    }
-
-    /**
-     * @return true if this is an application
-     */
-    public boolean isStandalone()
-    {
-        return standalone;
     }
 }
