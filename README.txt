@@ -211,15 +211,15 @@ system.  Edit the script for your system if you wish to use a
 different database (default=socdata) or user/password
 (default=socuser/socpass)
 
-To create the tables in a mysql database, and a user for the server to
-connect and access the data, execute the script
-${JSETTLERS_HOME}/bin/sql/jsettlers-init.sql
+To create the database and a user on a mysql server, and initialize
+the tables, there are scripts provided in ${JSETTLERS_HOME}/bin/sql
 
-  $ mysql -u root -p -e "SOURCE bin/sql/jsettlers-init.sql"
+  $ mysql -u root -p -e "SOURCE bin/sql/jsettlers-db.sql"
+  $ mysql -u root -p socdata -e "SOURCE bin/sql/jsettlers-tables.sql"
 
-This will connect as root, prompt for the root password, create the
-'socdata' database, create a 'socuser' user with the password
-'socpass', and build empty tables. The script will fail if the tables
+The first command connects as root, prompts for the root password, and
+creates the 'socdata' database, and a 'socuser' user with the password
+'socpass'.  The second creates the tables, and will fail if the tables
 already exist.
 
 To create accounts in the socdata database, run the simple account
