@@ -76,7 +76,7 @@ directory which contains both JSettlers.jar, settlers-server.jar and the
 "lib" directory.  Start the server with the following command
 (server requires Java 1.4):
 
-  java -jar JSettlersServer.jar 8880 10 dbUser dbPass
+  $ java -jar JSettlersServer.jar 8880 10 socuser socpass
 
 If MySQL is not installed and running (See "Database Setup"), you will
 see a warning with the appropriate explanation:
@@ -89,14 +89,14 @@ maintained.
 Now, from another command line window, start the player client with
 the following command:
 
-  java -jar JSettlers.jar localhost 8880
+  $ java -jar JSettlers.jar localhost 8880
 
 If you are using Java 1.1 you will need to unpack the Java archive
 (Java could not run directly from jar files until version 1.2). The
 commands to unpack, then start the client are:
 
-  jar -xf JSettlers.jar
-  java soc.client.SOCPlayerClient localhost 8880
+  $ jar -xf JSettlers.jar
+  $ java soc.client.SOCPlayerClient localhost 8880
 
 In the player client window, enter "debug" in the Nickname field and
 create a new game.
@@ -119,11 +119,11 @@ must be "debug" in order to use the administrative commands.
 Now you can add some robot players.  Enter the following commands in
 separate command line windows:
 
-  java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd
+  $ java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot1 passwd
 
-  java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot2 passwd
+  $ java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot2 passwd
 
-  java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot3 passwd
+  $ java -cp JSettlersServer.jar soc.robot.SOCRobotClient localhost 8880 robot3 passwd
 
 Now click on the "Sit Here" button and press "Start Game".  The robot
 players should automatically join the game and start playing.
@@ -132,7 +132,7 @@ If you want other people to access your server, tell them your server
 IP address and port number (in this case 8880).  They will enter the
 following command (or use the instructions above for Java 1.1):
 
-  java -jar JSettlers.jar <host> <port_number>
+  $ java -jar JSettlers.jar <host> <port_number>
 
 Where host is the IP address and port_number is the port number.
 
@@ -182,7 +182,7 @@ To allow browsers with old versions of Java (1.1) to use the applet,
 unpack JSettlers.jar and copy (recursively) the extracted "soc"
 and "resources" directories to ${docroot}. To unpack, use:
 
-    $ jar -xf JSettlers.jar
+  $ jar -xf JSettlers.jar
 
 You may also copy the "doc/users" directory (recursively) to the same
 directory as the sample .html pages to provide user documentation.
@@ -204,28 +204,28 @@ Database Setup
 
 If you want to maintain user accounts, you will need to set up a MySQL
 database. This will eliminate the "Problem connecting to database"
-errors from the server. We assume you have installed it correctly. 
+errors from the server. We assume you have installed it correctly.
 
-Run the following commands to create the database and configure its
-tables.
+An example script for MySQL has been included, to initialize a clean
+system.  Edit the script for your system if you wish to use a
+different database (default=socdata) or user/password
+(default=socuser/socpass)
 
-CREATE DATABASE socdata;
+To create the tables in a mysql database, and a user for the server to
+connect and access the data, execute the script
+${JSETTLERS_HOME}/bin/sql/jsettlers-init.mysql
 
-USE socdata;
+  $ mysql -u root -p -e "SOURCE bin/sql/jsettlers-init.mysql"
 
-CREATE TABLE users (nickname VARCHAR(20), host VARCHAR(50), password VARCHAR(20), email VARCHAR(50), lastlogin DATE);
+This will connect as root, prompt for the root password, create the
+'socdata' database, create a 'socuser' user with the password
+'socpass', and build empty tables. The script will fail if the tables
+already exist.
 
-CREATE TABLE logins (nickname VARCHAR(20), host VARCHAR(50), lastlogin DATE);
+To create accounts in the socdata database, run the simple account
+creation client with the following command:
 
-CREATE TABLE games (gamename VARCHAR(20), player1 VARCHAR(20), player2 VARCHAR(20), player3 VARCHAR(20), player4 VARCHAR(20), score1 TINYINT, score2 TINYINT, score3 TINYINT, score4 TINYINT, starttime TIMESTAMP);
-
-CREATE TABLE robotparams (robotname VARCHAR(20), maxgamelength INT, maxeta INT, etabonusfactor FLOAT, adversarialfactor FLOAT, leaderadversarialfactor FLOAT, devcardmultiplier FLOAT, threatmultiplier FLOAT, strategytype INT, starttime TIMESTAMP, endtime TIMESTAMP, gameswon INT, gameslost INT, tradeFlag BOOL);
-
-
-To create accounts, run the simple account creation client with the
-following command:
-
-  java -jar JSettlers.jar soc.client.SOCAccountClient localhost 8880
+  $ java -cp JSettlers.jar soc.client.SOCAccountClient localhost 8880
 
 
 Development and Compiling
