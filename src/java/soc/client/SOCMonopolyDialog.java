@@ -77,12 +77,12 @@ class SOCMonopolyDialog extends Dialog implements ActionListener
      */
     public void setVisible(boolean b)
     {
+        super.setVisible(b);
+
         if (b)
         {
             rsrcBut[0].requestFocus();
         }
-
-        super.setVisible(b);
     }
 
     /**
