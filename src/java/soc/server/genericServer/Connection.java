@@ -38,66 +38,79 @@ import java.util.Vector;
  *  Reads from the net, writes atomically to the net and
  *  holds the connection data
  */
-public final class Connection extends Thread implements Runnable, Serializable, Cloneable
+public final class Connection implements Serializable, Cloneable
 {
-    static int putters = 0;
-    static Object puttersMonitor = new Object();
     protected final static int TIMEOUT_VALUE = 3600000; // approx. 1 hour
 
-    /**
-     * the data associated with this connection
-     */
+    /** The data associated with this connection. */
     public Object data;
-    DataInputStream in = null;
-    DataOutputStream out = null;
-    Socket s = null;
-    Server sv;
-    public Thread reader;
-    protected String hst;
+
+    /** The most recent error. */
     protected Exception error = null;
-    protected boolean connected = false;
-    public Vector outQueue = new Vector();
 
-    /** initialize the connection data */
-    Connection(Socket so, Server sve)
+    private DataInputStream in = null;
+    private DataOutputStream out = null;
+    private Socket socket = null;
+    private Server server;
+    private String host;
+    private boolean connected = false;
+    private Vector outQueue = new Vector();
+
+    /** Initialize the connection data. */
+    Connection(Socket so, Server sv)
     {
-        hst = so.getInetAddress().getHostName();
+        host = so.getInetAddress().getHostName();
 
-        sv = sve;
-        s = so;
-        reader = null;
+        server = sv;
+        socket = so;
         data = null;
     }
 
-    /**
-     * DOCUMENT ME!
-     *
-     * @return DOCUMENT ME!
-     */
+    /** Return the host name of this machine known by this connection. */
     public String host()
     {
-        return hst;
+        return host;
     }
 
-    /** start reading from the net; called only by the server */
-    boolean connect()
+    /** Returns true if the connection to the client is active. */
+    public boolean isConnected()
+    {
+        return connected;
+    }
+
+    /** Use this to send a message to the client this connection is to! */
+    public final boolean put(String message)
+    {
+        synchronized (outQueue)
+        {
+            D.ebugPrintln("Adding " + message + " to outQueue for " + data);
+            outQueue.addElement(message);
+            outQueue.notify();
+        }
+
+        return true;
+    }
+
+    /** Start reading from the net; called only by the server. */
+    protected boolean connect()
     {
         try
         {
-            s.setSoTimeout(TIMEOUT_VALUE);
-            in = new DataInputStream(s.getInputStream());
-            out = new DataOutputStream(s.getOutputStream());
+            socket.setSoTimeout(TIMEOUT_VALUE);
+            in = new DataInputStream(socket.getInputStream());
+            out = new DataOutputStream(socket.getOutputStream());
             connected = true;
-            reader = this;
 
-            Putter putter = new Putter(this);
-            putter.start();
+            // start the reader
+            new Reciever().start();
 
-            //(reader=new Thread(this)).start();
+            // start the writer
+            new Sender().start();
         }
         catch (Exception e)
         {
-            D.ebugPrintln("IOException in Connection.connect (" + hst + ") - " + e);
+            D.ebugPrintln("IOException in Connection.connect (" +
+                          host + ") - " + e);
 
             if (D.ebugOn)
             {
@@ -113,104 +126,52 @@ public final class Connection extends Thread implements Runnable, Serializable, 
         return true;
     }
 
-    /** continuously read from the net */
-    public void run()
+    /** Close the socket, stop the reader; called only by server and self. */
+    protected void disconnect()
     {
-        sv.addConnection(this);
+        D.ebugPrintln("DISCONNECTING " + data);
+        connected = false;
 
         try
         {
-            while (connected)
-            {
-                sv.treat(in.readUTF(), this);
+            // kills the Reciever thread w/ SocketException("Socket closed")
+            socket.close();
+            // wake the Sender thread
+            synchronized (outQueue) {
+                outQueue.notify();
             }
         }
         catch (IOException e)
         {
-            D.ebugPrintln("IOException in Connection.run (" + hst + ") - " + e);
-
             if (D.ebugOn)
             {
+                D.ebugPrintln("IOException in Connection.disconnect (" + host + ") - " + e);
                 e.printStackTrace(System.out);
             }
 
-            if (!connected)
-            {
-                return;
-            }
-
             error = e;
-            sv.removeConnection(this);
         }
+
+        in = null;
+        out = null;
+        socket = null;
     }
 
-    /**
-     * DOCUMENT ME!
-     *
-     * @param str DOCUMENT ME!
-     *
-     * @return DOCUMENT ME!
-     */
-    public final boolean put(String str)
+    /** Put a message on the net, disconnecting on failure. */
+    private final boolean send(String message)
     {
-        synchronized (outQueue)
-        {
-            D.ebugPrintln("Adding " + str + " to outQueue for " + data);
-            outQueue.addElement(str);
-            outQueue.notify();
-        }
-
-        return true;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param str DOCUMENT ME!
-     *
-     * @return DOCUMENT ME!
-     */
-    public boolean putForReal(String str)
-    {
-        boolean rv = putAux(str);
-
-        if (!rv)
-        {
-            if (!connected)
-            {
-                return false;
-            }
-            else
-            {
-                sv.removeConnection(this);
-            }
-
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
-
-    /** put a message on the net
-     * @return success, disconnects on failure
-     */
-    public final boolean putAux(String str)
-    {
-        if ((error != null) || !connected)
-        {
-            return false;
-        }
-
         try
         {
-            //D.ebugPrintln("trying to put "+str+" to "+data);
-            out.writeUTF(str);
+            if ((error == null) && connected)
+            {
+                //D.ebugPrintln("trying to put "+message+" to "+data);
+                out.writeUTF(message);
+                return true;
+            }
         }
         catch (IOException e)
         {
-            D.ebugPrintln("IOException in Connection.putAux (" + hst + ") - " + e);
+            D.ebugPrintln("IOException in Connection.send(" + host + ") - " + e);
 
             if (D.ebugOn)
             {
@@ -218,8 +179,6 @@ public final class Connection extends Thread implements Runnable, Serializable, 
             }
 
             error = e;
-
-            return false;
         }
         catch (Exception ex)
         {
@@ -230,104 +189,105 @@ public final class Connection extends Thread implements Runnable, Serializable, 
                 ex.printStackTrace(System.out);
             }
 
-            return false;
+            error = ex;
         }
 
-        return true;
+        // all failures go through here
+        if (connected)
+        {
+            server.removeConnection(this);
+        }
+
+        return false;
     }
 
-    /** close the socket, stop the reader */
-    void disconnect()
+    /** Thread to read commands from the net and pass to server to treat. */
+    private class Reciever extends Thread
     {
-        D.ebugPrintln("DISCONNECTING " + data);
-        connected = false;
-
-        /*                if(Thread.currentThread()!=reader && reader!=null && reader.isAlive())
-           reader.stop();*/
-        try
+        public Reciever()
         {
-            s.close();
+            setDaemon(true);
         }
-        catch (IOException e)
-        {
-            D.ebugPrintln("IOException in Connection.disconnect (" + hst + ") - " + e);
 
-            if (D.ebugOn)
+        // continuously read from the net
+        public void run()
+        {
+            try
             {
-                e.printStackTrace(System.out);
+                while (connected)
+                {
+                    server.treat(in.readUTF(), Connection.this);
+                }
             }
+            catch (IOException e)
+            {
+                D.ebugPrintln("IOException in Connection.run (" +
+                              host + ") - " + e);
 
-            error = e;
+                if (D.ebugOn)
+                {
+                    e.printStackTrace(System.out);
+                }
+
+                if (connected)
+                {
+                    error = e;
+                    // calls disconnect
+                    server.removeConnection(Connection.this);
+                }
+            }
         }
-
-        s = null;
-        in = null;
-        out = null;
     }
 
     /**
-     * DOCUMENT ME!
-     *
-     * @return DOCUMENT ME!
+     * Thread to dequeue commands (queued by ServerImpl) and send to client.
      */
-    public boolean isConnected()
+    private class Sender extends Thread
     {
-        return connected;
-    }
-
-    class Putter extends Thread
-    {
-        Connection con;
-
-        //public boolean putting = true;
-        public Putter(Connection c)
+        public Sender()
         {
-            con = c;
-            D.ebugPrintln("NEW PUTTER CREATED FOR " + data);
+            setDaemon(true);
         }
 
         public void run()
         {
-            while (con.connected)
+            while (connected)
             {
-                String c = null;
-
-                D.ebugPrintln("** " + data + " is at the top of the putter loop");
+                String message = null;
 
                 synchronized (outQueue)
                 {
-                    if (outQueue.size() > 0)
+                    while (outQueue.size() == 0 && connected)
                     {
-                        c = (String) outQueue.elementAt(0);
+                        try
+                        {
+                            outQueue.wait();
+                        }
+                        catch (InterruptedException x) //what might cause this?
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+                    
+                    if (connected)
+                    {
+                        message = (String) outQueue.elementAt(0);
                         outQueue.removeElementAt(0);
                     }
                 }
 
-                if (c != null)
+                if (message != null)
                 {
-                    boolean rv = con.putForReal(c);
-
-                    // rv ignored because handled by putForReal
-                }
-
-                synchronized (outQueue)
-                {
-                    if (outQueue.size() == 0)
+                    try
                     {
-                        try
-                        {
-                            //D.ebugPrintln("** "+data+" is WAITING for outQueue");
-                            outQueue.wait(1000);
-                        }
-                        catch (Exception ex)
-                        {
-                            D.ebugPrintln("Exception while waiting for outQueue in " + data + ". - " + ex);
-                        }
+                        send(message);
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
                     }
                 }
             }
-
-            D.ebugPrintln("putter not putting connected==false : " + data);
         }
     }
 }
