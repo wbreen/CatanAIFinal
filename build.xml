@@ -292,17 +292,32 @@
           <include name="bin/" />
           <include name="docs/" />
           <include name="lib/" />
-          <include name="*.properties*" />
+          <include name="*.properties.default" />
         </fileset>
+      </copy>
+      <copy todir="${dist.tmp}" preservelastmodified="true">
+        <!-- copy of the defaults intended for modification -->
+        <fileset dir="${target}" includes="*.properties.default" />
+        <mapper type="glob" from="*.default" to="*"/>
       </copy>
       <copy todir="${dist.tmp}/web">
         <fileset dir="${web.src}" />
       </copy>
 
-      <tar destfile="${dist.tgz}" compression="gzip"
-           basedir="${dist}" includes="${dist.name}/" />
-      <zip destfile="${dist.zip}"
-           basedir="${dist}" includes="${dist.name}/" />
+      <tar destfile="${dist.tgz}" compression="gzip">
+        <tarfileset dir="${dist}" mode="755" 
+                    includes="${dist.name}/bin/" />
+        <tarfileset dir="${dist}" 
+                    includes="${dist.name}/"
+                    excludes="${dist.name}/bin/" />
+      </tar>
+      <zip destfile="${dist.zip}">
+        <zipfileset dir="${dist}" filemode="755" 
+                    includes="${dist.name}/bin/" />
+        <zipfileset dir="${dist}" 
+                    includes="${dist.name}/"
+                    excludes="${dist.name}/bin/" />
+      </zip>
 
       <!-- clean up -->
       <delete dir="${dist.tmp}" quiet="true" />
