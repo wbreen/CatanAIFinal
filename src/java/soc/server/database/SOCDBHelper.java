@@ -722,9 +722,9 @@ public class SOCDBHelper
     /**
      * DOCUMENT ME!
      *
-     * @param robotName DOCUMENT ME!
+     * @param type either "human" or "robot"
      *
-     * @return null if robotName not in database
+     * @return array of robot data
      *
      * @throws SQLException DOCUMENT ME!
      */

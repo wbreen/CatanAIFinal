@@ -56,7 +56,7 @@ public class Pair
     /**
      * DOCUMENT ME!
      *
-     * @param ip DOCUMENT ME!
+     * @param o DOCUMENT ME!
      *
      * @return DOCUMENT ME!
      */
