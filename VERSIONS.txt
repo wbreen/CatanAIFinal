@@ -15,6 +15,9 @@
 - several code cleanup issues (dbrosius)
 - database initialization commands in separate file (mchenryc)
 - user database now stores wins losses and face choice. (jtwilley)
+- faces are restored on login. (jbrowan)
+- statistics are stored and accessed via StatisticsClient (jbrowan)
+- revised layout for PlayerClient (dagolden)
 
     > 1.0.6 (build 2004-11-17)
 
