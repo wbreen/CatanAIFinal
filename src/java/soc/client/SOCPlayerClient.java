@@ -216,7 +216,6 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
      *
      * @param h  host
      * @param p  port
-     * @param visual  true if this client is visual
      */
     public SOCPlayerClient(String h, int p)
     {

@@ -240,7 +240,7 @@ public class SOCPlayerInterface extends Frame implements ActionListener
 
     /**
      * Overriden so the peer isn't painted, which clears background. Don't call
-     * this directly, use {@link Component#repaint()} instead.
+     * this directly, use {@link #repaint()} instead.
      */
     public void update(Graphics g)
     {

@@ -907,8 +907,6 @@ public class SOCHandPanel extends Panel implements ActionListener
 
     /**
      * Internal mechanism to remove start button (if visible) and add VP label.
-     *
-     * @param started has game been started?
      */
     public void removeStartBut()
     {

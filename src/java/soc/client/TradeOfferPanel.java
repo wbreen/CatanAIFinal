@@ -526,11 +526,7 @@ public class TradeOfferPanel extends Panel
     /**
      * Update to view the of an offer from another player.
      *
-     * @param  give  the set of resources being given
-     * @param  get   the set of resources being asked for
-     * @param  to    a boolean array where 'true' means that the offer
-     *               is being made to the player with the same number as
-     *               the index of the 'true'
+     * @param  currentOffer the trade being proposed
      */
     public void setOffer(SOCTradeOffer currentOffer)
     {

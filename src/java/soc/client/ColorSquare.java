@@ -64,7 +64,7 @@ public class ColorSquare extends Canvas implements MouseListener
     /**
      * Creates a new ColorSquare object without a visible value.
      *
-     * @see ColorSquare(int, boolean, Color, int, int)
+     * @see #ColorSquare(int, boolean, Color, int, int)
      */
     public ColorSquare()
     {
@@ -77,7 +77,7 @@ public class ColorSquare extends Canvas implements MouseListener
      * <code>NUMBER</code>, non-interactive, upper=99, lower=0.
      *
      * @param c background color
-     * @see ColorSquare(int, boolean, Color, int, int)
+     * @see #ColorSquare(int, boolean, Color, int, int)
      */
     public ColorSquare(Color c)
     {
@@ -91,7 +91,7 @@ public class ColorSquare extends Canvas implements MouseListener
      *
      * @param c background color
      * @param v initial int value
-     * @see ColorSquare(int, boolean, Color, int, int)
+     * @see #ColorSquare(int, boolean, Color, int, int)
      */
     public ColorSquare(Color c, int v)
     {
@@ -106,7 +106,7 @@ public class ColorSquare extends Canvas implements MouseListener
      * @param k Kind: NUMBER, YES_NO, CHECKBOX, BOUNDED_INC, BOUNDED_DECk
      * @param in interactive flag allowing user interaction
      * @param c background color
-     * @see ColorSquare(int, boolean, Color, int, int)
+     * @see #ColorSquare(int, boolean, Color, int, int)
      */
     public ColorSquare(int k, boolean in, Color c)
     {
