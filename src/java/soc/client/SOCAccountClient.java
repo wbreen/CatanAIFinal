@@ -137,7 +137,7 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
      */
     protected void initVisualElements()
     {
-        setFont(new Font("Monaco", Font.PLAIN, 12));
+        setFont(new Font("SansSerif", Font.PLAIN, 12));
         
         nick = new TextField(20);
         pass = new TextField(10);

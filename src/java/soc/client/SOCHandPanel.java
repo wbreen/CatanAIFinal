@@ -180,7 +180,7 @@ public class SOCHandPanel extends Panel implements ActionListener
 
         setBackground(playerInterface.getPlayerColor(player.getPlayerNumber()));
         setForeground(Color.black);
-        setFont(new Font("Helvetica", Font.PLAIN, 10));
+        setFont(new Font("SansSerif", Font.PLAIN, 10));
 
         faceImg = new SOCFaceButton(playerInterface, player.getPlayerNumber());
         add(faceImg);
@@ -519,10 +519,8 @@ public class SOCHandPanel extends Panel implements ActionListener
         else if ((e.getSource() == cardList) || (target == CARD))
         {
             String item;
-            int itemNum;
 
             item = cardList.getSelectedItem();
-            itemNum = cardList.getSelectedIndex();
 
             if (item == null || item.length() == 0)
             {
@@ -1175,8 +1173,6 @@ public class SOCHandPanel extends Panel implements ActionListener
                 int sheepW = fm.stringWidth("Sheep: ");
                 int pcW = fm.stringWidth(CARD);
                 int giveW = fm.stringWidth(GIVE);
-                int clearW = fm.stringWidth(CLEAR);
-                int bankW = fm.stringWidth(BANK);
                 int cardsH = 5 * (lineH + space);
                 int tradeH = sqpDim.height + space + (2 * (lineH + space));
                 int sectionSpace = (dim.height - (inset + faceW + cardsH + tradeH + lineH + inset)) / 3;

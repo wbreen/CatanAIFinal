@@ -48,7 +48,7 @@ public class SquaresPanel extends Panel
 
         interactive = in;
 
-        setFont(new Font("Helvetica", Font.PLAIN, 10));
+        setFont(new Font("SansSerif", Font.PLAIN, 10));
 
         give = new ColorSquare[5];
         give[0] = new ColorSquare(ColorSquare.NUMBER, in, ColorSquare.CLAY);

@@ -89,7 +89,7 @@ public class SOCBuildingPanel extends Panel implements ActionListener
 
         setBackground(new Color(156, 179, 94));
         setForeground(Color.black);
-        setFont(new Font("Helvetica", Font.PLAIN, 10));
+        setFont(new Font("SansSerif", Font.PLAIN, 10));
 
         /*
            title = new Label("Building Costs:");
@@ -178,7 +178,6 @@ public class SOCBuildingPanel extends Panel implements ActionListener
         FontMetrics fm = this.getFontMetrics(this.getFont());
         int lineH = ColorSquare.HEIGHT;
         int rowSpaceH = (dim.height - (8 * lineH)) / 3;
-        int halfLineH = lineH / 2;
         int costW = fm.stringWidth(new String("Cost: "));
         int butW = 50;
         int margin = 2;

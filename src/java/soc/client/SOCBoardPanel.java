@@ -1363,9 +1363,6 @@ public class SOCBoardPanel extends Canvas implements MouseListener, MouseMotionL
      */
     public void mousePressed(MouseEvent evt)
     {
-        int x = evt.getX();
-        int y = evt.getY();
-
         if (hilight > 0)
         {
             SOCPlayerClient client = playerInterface.getClient();

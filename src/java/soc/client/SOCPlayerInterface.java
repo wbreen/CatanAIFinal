@@ -157,7 +157,7 @@ public class SOCPlayerInterface extends Frame
          */
         setBackground(Color.black);
         setForeground(Color.black);
-        setFont(new Font("Geneva", Font.PLAIN, 10));
+        setFont(new Font("SansSerif", Font.PLAIN, 10));
 
         /**
          * setup interface elements
@@ -215,21 +215,21 @@ public class SOCPlayerInterface extends Frame
          * initialize the text input and display and add them to the interface
          */
         textDisplay = new SnippingTextArea("", 40, 80, TextArea.SCROLLBARS_VERTICAL_ONLY, 80);
-        textDisplay.setFont(new Font("Monoco", Font.PLAIN, 10));
+        textDisplay.setFont(new Font("SansSerif", Font.PLAIN, 10));
         textDisplay.setBackground(new Color(255, 230, 162));
         textDisplay.setForeground(Color.black);
         textDisplay.setEditable(false);
         add(textDisplay);
 
         chatDisplay = new SnippingTextArea("", 40, 80, TextArea.SCROLLBARS_VERTICAL_ONLY, 100);
-        chatDisplay.setFont(new Font("Monoco", Font.PLAIN, 10));
+        chatDisplay.setFont(new Font("SansSerif", Font.PLAIN, 10));
         chatDisplay.setBackground(new Color(255, 230, 162));
         chatDisplay.setForeground(Color.black);
         chatDisplay.setEditable(false);
         add(chatDisplay);
 
         textInput = new TextField();
-        textInput.setFont(new Font("Monoco", Font.PLAIN, 10));
+        textInput.setFont(new Font("SansSerif", Font.PLAIN, 10));
 
         FontMetrics fm = this.getFontMetrics(textInput.getFont());
         textInput.setSize(SOCBoardPanel.getPanelX(), fm.getHeight() + 4);

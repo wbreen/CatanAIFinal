@@ -66,7 +66,7 @@ class SOCDiscardDialog extends Dialog implements ActionListener, MouseListener
         numDiscards = rnum;
         setBackground(new Color(255, 230, 162));
         setForeground(Color.black);
-        setFont(new Font("Geneva", Font.PLAIN, 12));
+        setFont(new Font("SansSerif", Font.PLAIN, 12));
 
         discardBut = new Button("Discard");
 
@@ -138,8 +138,6 @@ class SOCDiscardDialog extends Dialog implements ActionListener, MouseListener
      */
     public void doLayout()
     {
-        int x = getInsets().left;
-        int y = getInsets().top;
         int width = getSize().width - getInsets().left - getInsets().right;
         int height = getSize().height - getInsets().top - getInsets().bottom;
         int space = 5;

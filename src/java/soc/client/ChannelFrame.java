@@ -81,7 +81,7 @@ public class ChannelFrame extends Frame
         cnvs.setBackground(Color.lightGray);
         cnvs.setSize(5, 200);
         lst.setSize(180, 200);
-        setFont(new Font("Helvetica", Font.PLAIN, 12));
+        setFont(new Font("SansSerif", Font.PLAIN, 12));
         add(ta);
         add(cnvs);
         add(lst);

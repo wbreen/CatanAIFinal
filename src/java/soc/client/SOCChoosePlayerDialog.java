@@ -60,7 +60,7 @@ class SOCChoosePlayerDialog extends Dialog implements ActionListener
         players = p;
         setBackground(new Color(255, 230, 162));
         setForeground(Color.black);
-        setFont(new Font("Geneva", Font.PLAIN, 12));
+        setFont(new Font("SansSerif", Font.PLAIN, 12));
         setLayout(null);
         setSize(350, 100);
 

@@ -7,6 +7,8 @@
 - fixed [bug 950989] which caused chat windows to wrap oddly, and
   removed extra blank always at bottom of chat text
 - source updated to compile on jdk 5.0 (Dave Brosius)
+- fonts are specified with generic names for better compatibility and
+  all changed to SansSerif rather than any monospace fonts (dagolden)
 
     > 1.0.6 (build 2004-xx-xx)
 

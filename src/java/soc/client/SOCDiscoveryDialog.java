@@ -51,7 +51,7 @@ class SOCDiscoveryDialog extends Dialog implements ActionListener
         this.pi = pi;
         setBackground(new Color(255, 230, 162));
         setForeground(Color.black);
-        setFont(new Font("Geneva", Font.PLAIN, 12));
+        setFont(new Font("SansSerif", Font.PLAIN, 12));
 
         doneBut = new Button("Done");
         clearBut = new Button("Clear");
@@ -102,8 +102,6 @@ class SOCDiscoveryDialog extends Dialog implements ActionListener
      */
     public void doLayout()
     {
-        int x = getInsets().left;
-        int y = getInsets().top;
         int width = getSize().width - getInsets().left - getInsets().right;
         int height = getSize().height - getInsets().top - getInsets().bottom;
         int space = 5;
@@ -140,7 +138,7 @@ class SOCDiscoveryDialog extends Dialog implements ActionListener
 
         try
         {
-            rsrcY = y + 20 + space + 20 + space;
+            rsrcY = getInsets().top + 20 + space + 20 + space;
 
             for (int i = 0; i < 5; i++)
             {

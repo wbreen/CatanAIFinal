@@ -99,7 +99,7 @@ public class TradeOfferPanel extends Panel
         public MessagePanel()
         {
             setLayout(null);
-            setFont(new Font("Helvetica", Font.PLAIN, 18));
+            setFont(new Font("SansSerif", Font.PLAIN, 18));
         
             msg = new Label(" ", Label.CENTER);
             msg.setBackground(insideBGColor);
@@ -165,7 +165,7 @@ public class TradeOfferPanel extends Panel
         public OfferPanel()
         {
             setLayout(null);
-            setFont(new Font("Helvetica", Font.PLAIN, 10));
+            setFont(new Font("SansSerif", Font.PLAIN, 10));
 
             toWhom1 = new Label();
             toWhom1.setBackground(insideBGColor);
