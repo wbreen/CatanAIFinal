@@ -171,7 +171,6 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
         port = p;
         nickname = nn;
         password = pw;
-        standalone = true;
     }
 
     /**
