@@ -165,6 +165,8 @@ public class SOCServer extends Server
         {
             System.err.println("No user database available: " +
                                x.getMessage());
+            System.err.println("Error Code:  " + x.getErrorCode() +
+                               " SQL State:  "+ x.getSQLState());
             System.err.println("Users will not be authenticated.");
         }
 
@@ -1641,17 +1643,22 @@ public class SOCServer extends Server
 
                 case SOCMessage.CHANGEFACE:
                     handleCHANGEFACE(c, (SOCChangeFace) mes);
-
                     break;
 
                 case SOCMessage.SETSEATLOCK:
                     handleSETSEATLOCK(c, (SOCSetSeatLock) mes);
-
                     break;
 
                 case SOCMessage.CREATEACCOUNT:
                     handleCREATEACCOUNT(c, (SOCCreateAccount) mes);
-
+                    break;
+                    
+                case SOCMessage.GETSTATISTICS:
+                    handleGETSTATISTICS(c, (SOCGetStatistics) mes);                    
+                    break;
+                
+                case SOCMessage.RESETSTATS:
+                    handleRESETSTATS(c, (SOCResetStatistics) mes);
                     break;
                 }
             }
@@ -1708,13 +1715,12 @@ public class SOCServer extends Server
 
         try
         {
-            // Record login, updating the last login time
+            // Update the last login time
             SOCDBHelper.recordLogin(userName, c.host(), System.currentTimeMillis());
         }
         catch (SQLException sqle)
         {
             c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
-
             return false;
         }
 
@@ -3750,7 +3756,7 @@ public class SOCServer extends Server
                 if (player != null)
                 {
                     player.setFaceId(mes.getFaceId());
-                    messageToGame(mes.getGame(), new SOCChangeFace(mes.getGame(), player.getPlayerNumber(), mes.getFaceId()));
+                    messageToGame(mes.getGame(), new SOCChangeFace(mes.getGame(), player.getPlayerNumber(), mes.getFaceId()));         
                 }
             }
     }
@@ -3839,6 +3845,105 @@ public class SOCServer extends Server
     }
 
     /**
+     * Handle "get statistics" message
+     *
+     * @param c  the connection
+     * @param mes  the message
+     */
+    private void handleGETSTATISTICS(Connection c, SOCGetStatistics mes)
+    {
+        String[][] statistics = null;
+
+        try
+        {
+            statistics = SOCDBHelper.getStatistics(mes.getStype());
+        }
+        catch (SQLException sqle)
+        {
+            System.err.println("Error getting statistics from db.");
+        }
+
+        if (statistics != null)
+        {
+            c.put(SOCShowStatistics.toCmd(mes.getStype(), statistics));
+        }
+        else
+        {
+            c.put(SOCStatusMessage.toCmd("No " + mes.getStype() + " statistics retrieved due to error."));
+        }
+    }
+
+    /**
+     * handle "create account" message
+     *
+     * @param c  the connection
+     * @param mes  the message
+     */
+    private void handleRESETSTATS(Connection c, SOCResetStatistics mes)
+    {
+        // Check to see if there is an account with the requested nickname
+        String userPassword = null;
+
+        try
+        {
+            userPassword = SOCDBHelper.getUserPassword(mes.getNickname());
+            
+            if (userPassword == null)
+            {
+                c.put(SOCStatusMessage.toCmd("The name '" + mes.getNickname() + "' does not have an account."));
+                return;
+            }
+        }
+        catch (SQLException sqle)
+        {
+            // Indicates a db problem: don't continue
+            c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
+            return;
+        }
+
+        // Reset statistics for the nickname and password in the message
+        String resetResults = "";
+
+        try
+        {
+            resetResults = SOCDBHelper.resetStatistics(mes.getNickname(), mes.getPassword());
+        }
+        catch (SQLException sqle)
+        {
+            System.err.println("Error resetting account in db.");
+        }
+
+        c.put(SOCStatusMessage.toCmd(resetResults + "for '" + mes.getNickname() + "'."));
+        
+        // Update statistics table to reflect the change
+        String[][] statistics = null;
+        
+        try
+        {
+            // Gather new statistics data
+            statistics = SOCDBHelper.getStatistics("human");
+        }
+        catch (SQLException sqle)
+        {
+            System.err.println("Error getting statistics from db.");
+            return;
+        }
+        
+        if (statistics != null)
+        {
+            // Send the new data to the client
+            c.put(SOCShowStatistics.toCmd("human", statistics));
+        }
+        else
+        {
+            c.put(SOCStatusMessage.toCmd("Error prevented refresh of human statistics."));
+        }
+    
+        return;
+    }
+
+    
+    /**
      * This player is sitting down at the game
      *
      * @param ga     the game
@@ -3849,7 +3954,7 @@ public class SOCServer extends Server
      */
     private void sitDown(SOCGame ga, Connection c, int pn, boolean robot)
     {
-            int face;
+            int face = 1;
             ga.takeMonitor();
 
             try
@@ -3863,7 +3968,8 @@ public class SOCServer extends Server
                 }
                 catch (Exception e)
                 {
-                    face = 1;
+                    D.ebugPrintln(e.toString());
+                    D.ebugPrintln("Error retrieving player face.");
                 }
                   
                 ga.getPlayer(pn).setFaceId(face);
@@ -4361,6 +4467,7 @@ public class SOCServer extends Server
                 }
 
                 storeGameScores(ga);
+                storePlayerFaces(ga);
 
                 break;
             }
@@ -4827,9 +4934,33 @@ public class SOCServer extends Server
                 }
                 catch (SQLException sqle)
                 {
-                    System.err.println("Error saving game scores in db.");
+                    D.ebugPrintln(sqle.toString());
+                    D.ebugPrintln("Error saving player face in db.");
                 }
             }
+    }
+
+    /**
+     * if all the players stayed for the whole game,
+     * record the scores in the database
+     *
+     * @param ga  the game
+     * @throws NullPointerExceptioin if ga is null
+     */
+    private void storePlayerFaces(SOCGame ga)
+    {
+        if (ga.getGameState() == SOCGame.OVER)
+        {
+            try
+            {
+                SOCDBHelper.saveFaces(ga);
+            }
+            catch (SQLException sqle)
+            {
+                D.ebugPrintln(sqle.toString());
+                D.ebugPrintln("Error saving player face in db.");
+            }
+        }
     }
 
     /**
