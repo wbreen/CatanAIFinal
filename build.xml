@@ -21,7 +21,7 @@
 
   <!-- **** See build.properties for client/server startup arguments **** -->
   <property name="client.class"   value="soc.client.SOCPlayerClient" />
-  <property name="server.class"   value="soc.server.SOCServer" />
+  <property name="server.class"   value="soc.server.Main" />
   <property name="main.class"     value="${client.class}" />
 
   <!-- directory names -->
@@ -33,6 +33,7 @@
   <property name="java.src"       value="src/java" />
   <property name="test.src"       value="src/test" />
   <property name="web.src"        value="src/web" />
+  <property name="props.src"      value="src/properties" />
 
   <property name="target"         location="target" />
   <property name="classes"        location="${target}/classes" />
@@ -200,11 +201,14 @@
       <copy todir="${bin.target}" preservelastmodified="true">
         <fileset dir="${bin.src}">
           <include name="jsettlers*" />
+          <include name="lcp.bat" />
+          <include name="icons/jsettlers.ico" />
           <include name="sql/*.sql" />
         </fileset>
       </copy>
       <copy todir="${target}">
         <fileset dir="${web.src}" includes="*.html" />
+        <fileset dir="${props.src}" includes="*.properties*" />
       </copy>
   </target>
 
@@ -253,7 +257,7 @@
              deprecation="${deprecation}" />
   </target>
 
-   
+  
   <!-- ************************************** -->
   <!-- Distribution targets -->
   <!-- ************************************** -->
@@ -288,6 +292,7 @@
           <include name="bin/" />
           <include name="docs/" />
           <include name="lib/" />
+          <include name="*.properties*" />
         </fileset>
       </copy>
       <copy todir="${dist.tmp}/web">
