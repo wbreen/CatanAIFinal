@@ -20,6 +20,9 @@
  **/
 package soc.server.database;
 
+import soc.game.SOCGame;
+import soc.game.SOCPlayer;
+
 import soc.util.SOCRobotParameters;
 
 import java.sql.Connection;
@@ -46,9 +49,9 @@ import java.util.Calendar;
  * It uses a database created with the following commands:
  * CREATE DATABASE socdata;
  * USE socdata;
- * CREATE TABLE users (nickname VARCHAR(20), host VARCHAR(50), password VARCHAR(20), email VARCHAR(50), lastlogin DATE);
+ * CREATE TABLE users (nickname VARCHAR(20), host VARCHAR(50), password VARCHAR(20), email VARCHAR(50), lastlogin DATE, wins SMALLINT, losses SMALLINT, face SMALLINT);
  * CREATE TABLE logins (nickname VARCHAR(20), host VARCHAR(50), lastlogin DATE);
- * CREATE TABLE games (gamename VARCHAR(20), player1 VARCHAR(20), player2 VARCHAR(20), player3 VARCHAR(20), player4 VARCHAR(20), score1 TINYINT, score2 TINYINT, score3 TINYINT, score4 TINYINT, starttime TIMESTAMP);
+ * CREATE TABLE games (gamename VARCHAR(20), player1 VARCHAR(20), player2 VARCHAR(20), player3 VARCHAR(20), player4 VARCHAR(20), score1 SMALLINT, score2 SMALLINT, score3 SMALLINT, score4 SMALLINT, starttime TIMESTAMP);
  * CREATE TABLE robotparams (robotname VARCHAR(20), maxgamelength INT, maxeta INT, etabonusfactor FLOAT, adversarialfactor FLOAT, leaderadversarialfactor FLOAT, devcardmultiplier FLOAT, threatmultiplier FLOAT, strategytype INT, starttime TIMESTAMP, endtime TIMESTAMP, gameswon INT, gameslost INT, tradeFlag BOOL);
  *
  */
@@ -69,21 +72,27 @@ public class SOCDBHelper
     /** Cached password used when reconnecting on error */
     private static String password;
     
-    private static String CREATE_ACCOUNT_COMMAND = "INSERT INTO users VALUES (?,?,?,?,?);";
+    private static String CREATE_ACCOUNT_COMMAND = "INSERT INTO users VALUES (?,?,?,?,?,?,?,?);";
     private static String RECORD_LOGIN_COMMAND = "INSERT INTO logins VALUES (?,?,?);";
     private static String USER_PASSWORD_QUERY = "SELECT password FROM users WHERE ( users.nickname = ? );";
+    private static String USER_FACE_QUERY = "SELECT face FROM users WHERE ( users.nickname = ? );";
     private static String HOST_QUERY = "SELECT nickname FROM users WHERE ( users.host = ? );";
     private static String LASTLOGIN_UPDATE = "UPDATE users SET lastlogin = ?  WHERE nickname = ? ;";
     private static String SAVE_GAME_COMMAND = "INSERT INTO games VALUES (?,?,?,?,?,?,?,?,?,?);";
     private static String ROBOT_PARAMS_QUERY = "SELECT * FROM robotparams WHERE robotname = ?;";
+    private static String UPDATE_STANDINGS_WINS = "UPDATE users SET wins = wins + 1 WHERE nickname = ?;";
+    private static String UPDATE_STANDINGS_LOSSES = "UPDATE users SET losses = losses + 1 WHERE nickname = ?;";
 
     private static PreparedStatement createAccountCommand = null;
     private static PreparedStatement recordLoginCommand = null;
     private static PreparedStatement userPasswordQuery = null;
+    private static PreparedStatement userFaceQuery = null;
     private static PreparedStatement hostQuery = null;
     private static PreparedStatement lastloginUpdate = null;
     private static PreparedStatement saveGameCommand = null;
     private static PreparedStatement robotParamsQuery = null;
+    private static PreparedStatement updateStandingsWins = null;
+    private static PreparedStatement updateStandingsLosses = null;
 
     /**
      * This makes a connection to the database
@@ -157,10 +166,13 @@ public class SOCDBHelper
         createAccountCommand = connection.prepareStatement(CREATE_ACCOUNT_COMMAND);
         recordLoginCommand = connection.prepareStatement(RECORD_LOGIN_COMMAND);
         userPasswordQuery = connection.prepareStatement(USER_PASSWORD_QUERY);
+        userFaceQuery = connection.prepareStatement(USER_FACE_QUERY);
         hostQuery = connection.prepareStatement(HOST_QUERY);
         lastloginUpdate = connection.prepareStatement(LASTLOGIN_UPDATE);
         saveGameCommand = connection.prepareStatement(SAVE_GAME_COMMAND);
         robotParamsQuery = connection.prepareStatement(ROBOT_PARAMS_QUERY);
+        updateStandingsWins = connection.prepareStatement(UPDATE_STANDINGS_WINS);
+        updateStandingsLosses = connection.prepareStatement(UPDATE_STANDINGS_LOSSES);
 
         return true;
     }
@@ -206,6 +218,49 @@ public class SOCDBHelper
         }
 
         return password;
+    }
+
+    /**
+     * returns default face for player
+     *
+     * @param sUserName username of player
+     *
+     * @return 1 if user account doesn't exist
+     *
+     * @throws SQLException if database is horked
+     */
+    public static int getUserFace(String sUserName) throws SQLException
+    {
+        int face = 1;
+
+        // ensure that the JDBC connection is still valid
+        if (checkConnection())
+        {
+            try
+            {
+                // fill in the data values to the Prepared statement
+                userFaceQuery.setString(1, sUserName);
+
+                // execute the Query
+                ResultSet resultSet = userFaceQuery.executeQuery();
+
+                // if no results, user is not authenticated
+                if (resultSet.next())
+                {
+                    face = resultSet.getInt(1);
+                }
+
+                resultSet.close();
+            }
+            catch (SQLException sqlE)
+            {
+                errorCondition = true;
+                sqlE.printStackTrace();
+                throw sqlE;
+            }
+        }
+
+        return face;
     }
 
     /**
@@ -280,6 +335,12 @@ public class SOCDBHelper
                 createAccountCommand.setString(3, password);
                 createAccountCommand.setString(4, email);
                 createAccountCommand.setDate(5, sqlDate, cal);
+		// current wins
+		createAccountCommand.setInt(6, 0);
+		// current losses
+		createAccountCommand.setInt(7, 0);
+		// default face
+		createAccountCommand.setInt(8, 1);
 
                 // execute the Command
                 createAccountCommand.executeUpdate();
@@ -326,6 +387,8 @@ public class SOCDBHelper
                 // execute the Command
                 recordLoginCommand.executeUpdate();
 
+                // update the last login time
+                updateLastlogin(userName, time);
                 return true;
             }
             catch (SQLException sqlE)
@@ -380,44 +443,62 @@ public class SOCDBHelper
     }
 
     /**
-     * DOCUMENT ME!
+     * saves game scores to database (both user and games tables)
      *
-     * @param gameName DOCUMENT ME!
-     * @param player1 DOCUMENT ME!
-     * @param player2 DOCUMENT ME!
-     * @param player3 DOCUMENT ME!
-     * @param player4 DOCUMENT ME!
-     * @param score1 DOCUMENT ME!
-     * @param score2 DOCUMENT ME!
-     * @param score3 DOCUMENT ME!
-     * @param score4 DOCUMENT ME!
-     * @param startTime DOCUMENT ME!
+     * @param ga game to be saved
      *
      * @return true if the save succeeded
      *
-     * @throws SQLException DOCUMENT ME!
+     * @throws SQLException if the database isn't available
      */
-    public static boolean saveGameScores(String gameName, String player1, String player2, String player3, String player4, short score1, short score2, short score3, short score4, java.util.Date startTime) throws SQLException
+    public static boolean saveGameScores(SOCGame ga) throws SQLException
     {
+	int sGCindex = 1;
+        SOCPlayer pl;
+
         // ensure that the JDBC connection is still valid
         if (checkConnection())
         {
             try
             {
                 // fill in the data values to the Prepared statement
-                saveGameCommand.setString(1, gameName);
-                saveGameCommand.setString(2, player1);
-                saveGameCommand.setString(3, player2);
-                saveGameCommand.setString(4, player3);
-                saveGameCommand.setString(5, player4);
-                saveGameCommand.setShort(6, score1);
-                saveGameCommand.setShort(7, score2);
-                saveGameCommand.setShort(8, score3);
-                saveGameCommand.setShort(9, score4);
-                saveGameCommand.setTimestamp(10, new Timestamp(startTime.getTime()));
+                saveGameCommand.setString(sGCindex++, ga.getName());
+
+		// iterate through the players
+                for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
+                {
+                    pl = ga.getPlayer(i);
+
+		    saveGameCommand.setString(sGCindex++, pl.getName());
+		}
+                for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
+                {
+                    pl = ga.getPlayer(i);
+
+		    saveGameCommand.setInt(sGCindex++, pl.getTotalVP());
+		}
+
+		saveGameCommand.setTimestamp(sGCindex++, new Timestamp(ga.getStartTime().getTime()));
 
                 // execute the Command
                 saveGameCommand.executeUpdate();
+
+		// iterate through the players
+                for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
+                {
+                    pl = ga.getPlayer(i);
+
+                    if (pl.getTotalVP() >= 10)
+                    {
+                        updateStandingsWins.setString(1, pl.getName());
+			updateStandingsWins.executeUpdate();
+		    } 
+		    else 
+		    {
+                        updateStandingsLosses.setString(1, pl.getName());
+			updateStandingsLosses.executeUpdate();
+		    }
+		}
 
                 return true;
             }

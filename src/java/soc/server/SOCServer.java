@@ -1706,13 +1706,18 @@ public class SOCServer extends Server
             return false;
         }
 
-        // Update the last login time
-        //Date currentTime = new Date();
+        try
+        {
+            // Record login, updating the last login time
+            SOCDBHelper.recordLogin(userName, c.host(), System.currentTimeMillis());
+        }
+        catch (SQLException sqle)
+        {
+            c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
 
-        //SOCDBHelper.updateLastlogin(userName, currentTime.getTime());
+            return false;
+        }
 
-        // Record the login info for this user
-        //SOCDBHelper.recordLogin(userName, c.host(), currentTime.getTime());
         return true;
     }
 
@@ -3844,12 +3849,24 @@ public class SOCServer extends Server
      */
     private void sitDown(SOCGame ga, Connection c, int pn, boolean robot)
     {
+            int face;
             ga.takeMonitor();
 
             try
             {
                 ga.addPlayer((String) c.data, pn);
                 ga.getPlayer(pn).setRobotFlag(robot);
+
+                try 
+                {
+                    face = SOCDBHelper.getUserFace(ga.getPlayer(pn).getName());
+                }
+                catch (Exception e)
+                {
+                    face = 1;
+                }
+                  
+                ga.getPlayer(pn).setFaceId(face);
 
                 // if the player can sit, then tell the other clients in the game
                 SOCSitDown sitMessage = new SOCSitDown(ga.getName(), (String) c.data, pn, robot);
@@ -4343,6 +4360,8 @@ public class SOCServer extends Server
                     }
                 }
 
+                storeGameScores(ga);
+
                 break;
             }
     }
@@ -4801,10 +4820,10 @@ public class SOCServer extends Server
             //D.ebugPrintln("allOriginalPlayers for "+ga.getName()+" : "+ga.allOriginalPlayers());
             if ((ga.getGameState() == SOCGame.OVER) && (ga.allOriginalPlayers()))
             {
-                //if (ga.allOriginalPlayers()) {				
+                //if (ga.allOriginalPlayers()) {
                 try
                 {
-                    SOCDBHelper.saveGameScores(ga.getName(), ga.getPlayer(0).getName(), ga.getPlayer(1).getName(), ga.getPlayer(2).getName(), ga.getPlayer(3).getName(), (short) ga.getPlayer(0).getTotalVP(), (short) ga.getPlayer(1).getTotalVP(), (short) ga.getPlayer(2).getTotalVP(), (short) ga.getPlayer(3).getTotalVP(), ga.getStartTime());
+                    SOCDBHelper.saveGameScores(ga);
                 }
                 catch (SQLException sqle)
                 {

@@ -1512,12 +1512,6 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
             if (nickname.equals(mes.getNickname()))
             {
                 pi.getBoardPanel().setPlayer();
-
-                /**
-                 * chenge the face (this is so that old faces don't 'stick')
-                 */
-                ga.getPlayer(mes.getPlayerNumber()).setFaceId(1);
-                changeFace(ga, 1);
             }
 
             /**
