@@ -22,86 +22,9 @@ package soc.server;
 
 import soc.disableDebug.D;
 
-import soc.game.SOCBoard;
-import soc.game.SOCCity;
-import soc.game.SOCDevCardConstants;
-import soc.game.SOCDevCardSet;
-import soc.game.SOCGame;
-import soc.game.SOCMoveRobberResult;
-import soc.game.SOCPlayer;
-import soc.game.SOCPlayingPiece;
-import soc.game.SOCResourceConstants;
-import soc.game.SOCResourceSet;
-import soc.game.SOCRoad;
-import soc.game.SOCSettlement;
-import soc.game.SOCTradeOffer;
-
-import soc.message.SOCAcceptOffer;
-import soc.message.SOCAdminPing;
-import soc.message.SOCAdminReset;
-import soc.message.SOCBCastTextMsg;
-import soc.message.SOCBankTrade;
-import soc.message.SOCBoardLayout;
-import soc.message.SOCBuildRequest;
-import soc.message.SOCBuyCardRequest;
-import soc.message.SOCCancelBuildRequest;
-import soc.message.SOCChangeFace;
-import soc.message.SOCChannels;
-import soc.message.SOCChoosePlayer;
-import soc.message.SOCChoosePlayerRequest;
-import soc.message.SOCClearOffer;
-import soc.message.SOCClearTradeMsg;
-import soc.message.SOCCreateAccount;
-import soc.message.SOCDeleteChannel;
-import soc.message.SOCDeleteGame;
-import soc.message.SOCDevCard;
-import soc.message.SOCDevCardCount;
-import soc.message.SOCDiceResult;
-import soc.message.SOCDiscard;
-import soc.message.SOCDiscardRequest;
-import soc.message.SOCDiscoveryPick;
-import soc.message.SOCEndTurn;
-import soc.message.SOCFirstPlayer;
-import soc.message.SOCGameMembers;
-import soc.message.SOCGameState;
-import soc.message.SOCGameTextMsg;
-import soc.message.SOCGames;
-import soc.message.SOCImARobot;
-import soc.message.SOCJoin;
-import soc.message.SOCJoinAuth;
-import soc.message.SOCJoinGame;
-import soc.message.SOCJoinGameAuth;
-import soc.message.SOCJoinGameRequest;
-import soc.message.SOCLargestArmy;
-import soc.message.SOCLastSettlement;
-import soc.message.SOCLeave;
-import soc.message.SOCLeaveGame;
-import soc.message.SOCLongestRoad;
-import soc.message.SOCMakeOffer;
-import soc.message.SOCMembers;
-import soc.message.SOCMessage;
-import soc.message.SOCMonopolyPick;
-import soc.message.SOCMoveRobber;
-import soc.message.SOCNewChannel;
-import soc.message.SOCNewGame;
-import soc.message.SOCPlayDevCardRequest;
-import soc.message.SOCPlayerElement;
-import soc.message.SOCPotentialSettlements;
-import soc.message.SOCPutPiece;
-import soc.message.SOCRejectConnection;
-import soc.message.SOCRejectOffer;
-import soc.message.SOCResourceCount;
-import soc.message.SOCRobotDismiss;
-import soc.message.SOCRollDice;
-import soc.message.SOCSetPlayedDevCard;
-import soc.message.SOCSetSeatLock;
-import soc.message.SOCSetTurn;
-import soc.message.SOCSitDown;
-import soc.message.SOCStartGame;
-import soc.message.SOCStatusMessage;
-import soc.message.SOCTextMsg;
-import soc.message.SOCTurn;
-import soc.message.SOCUpdateRobotParams;
+// all classes in package needed
+import soc.game.*;
+import soc.message.*;
 
 import soc.server.database.SOCDBHelper;
 
@@ -115,7 +38,8 @@ import soc.util.Version;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -143,75 +67,76 @@ public class SOCServer extends Server
     /**
      * Maximum number of connections allowed
      */
-    protected int maxConnections;
+    private int maxConnections;
 
     /**
      * A list of robots connected to this server
      */
-    protected Vector robots = new Vector();
+    private Vector robots = new Vector();
 
     /**
      * list of chat channels
      */
-    protected SOCChannelList channelList = new SOCChannelList();
+    private SOCChannelList channelList = new SOCChannelList();
 
     /**
      * list of soc games
      */
-    protected SOCGameList gameList = new SOCGameList();
+    private SOCGameList gameList = new SOCGameList();
 
     /**
-     * table of requests for robots to join games
+     * table of requests for robots to join games. No need to use synchronized
+     * Hashtable since access is only made when we have game lock anyway.
      */
-    protected Hashtable robotJoinRequests = new Hashtable();
+    private Map robotJoinRequests = new HashMap();
 
     /**
-     * table of requestst for robots to leave games
+     * table of requests for robots to leave games. No need to use synchronized
+     * Hashtable since access is only made when we have game lock anyway.
      */
-    protected Hashtable robotDismissRequests = new Hashtable();
+    private Map robotDismissals = new HashMap();
 
     /**
      * table of game data files
      */
-    protected Hashtable gameDataFiles = new Hashtable();
+    private Map gameDataFiles = new HashMap();
 
     /**
      * the current game event record
      */
-
     //protected SOCGameEventRecord currentGameEventRecord;
 
     /**
      * the time that this server was started
      */
-    protected long startTime;
+    private long startTime;
 
     /**
      * the total number of games that have been started
      */
-    protected int numberOfGamesStarted;
+    private int numberOfGamesStarted;
 
     /**
      * the total number of games finished
      */
-    protected int numberOfGamesFinished;
+    private int numberOfGamesFinished;
 
     /**
      * total number of users
      */
-    protected int numberOfUsers;
+    private int numberOfUsers;
 
     /**
      * server robot pinger
      */
-    SOCServerRobotPinger serverRobotPinger;
+    private SOCServerRobotPinger serverRobotPinger;
 
     /**
      * game timeout checker
      */
-    SOCGameTimeoutChecker gameTimeoutChecker;
-    String databaseUserName;
-    String databasePassword;
+    private SOCGameTimeoutChecker gameTimeoutChecker;
+    private String databaseUserName;
+    private String databasePassword;
 
     /**
      * Create a Settlers of Catan server listening on port p.
@@ -263,7 +188,7 @@ public class SOCServer extends Server
      * @param ch   the name of the channel
      *
      */
-    public void connectToChannel(Connection c, String ch)
+    private void connectToChannel(Connection c, String ch)
     {
         if (c != null)
         {
@@ -290,7 +215,7 @@ public class SOCServer extends Server
      * @param channelListLock  true if we have the channelList monitor
      * @return true if we destroyed the channel
      */
-    public boolean leaveChannel(Connection c, String ch, boolean channelListLock)
+    private boolean leaveChannel(Connection c, String ch, boolean channelListLock)
     {
         D.ebugPrintln("leaveChannel: " + c.data + " " + ch + " " + channelListLock);
 
@@ -344,7 +269,7 @@ public class SOCServer extends Server
      *
      * @return     true if c was not a member of ch before
      */
-    public boolean connectToGame(Connection c, String ga)
+    private boolean connectToGame(Connection c, String ga)
     {
         boolean result = false;
 
@@ -437,7 +362,7 @@ public class SOCServer extends Server
      * @param gameListLock  true if we have the gameList.takeMonitor() lock
      * @return true if the game was destroyed
      */
-    public boolean leaveGame(Connection c, String gm, boolean gameListLock)
+    private boolean leaveGame(Connection c, String gm, boolean gameListLock)
     {
         boolean gameDestroyed = false;
 
@@ -479,9 +404,7 @@ public class SOCServer extends Server
                 D.ebugPrintln("*** " + (String) c.data + " left the game " + gm);
                 messageToGameWithMon(gm, new SOCGameTextMsg(gm, SERVERNAME, (String) c.data + " left the game"));
 
-                /**
-                 * check if there is at least one person playing the game
-                 */
+                // check if there is at least one person playing the game
                 for (int pn = 0; pn < SOCGame.MAXPLAYERS; pn++)
                 {
                     if (cg != null)
@@ -499,9 +422,7 @@ public class SOCServer extends Server
 
                 //D.ebugPrintln("*** gameHasHumanPlayer = "+gameHasHumanPlayer+" for "+gm);
 
-                /**
-                 * check if there is at least one person watching the game
-                 */
+                // check if there is at least one person watching the game
                 if ((cg != null) && !gameHasHumanPlayer && !gameList.isGameEmpty(gm))
                 {
                     Enumeration membersEnum = gameList.getMembers(gm).elements();
@@ -536,15 +457,11 @@ public class SOCServer extends Server
 
                 //D.ebugPrintln("*** gameHasObserver = "+gameHasObserver+" for "+gm);
 
-                /**
-                 * if the leaving member was playing the game, and
-                 * it wasn't a robot, and the game isn't over, then...
-                 */
+                // if the leaving member was playing the game, and it wasn't a
+                // robot, and the game isn't over, then...
                 if (isPlayer && (gameHasHumanPlayer || gameHasObserver) && (cg != null) && (!cg.getPlayer(playerNumber).isRobot()) && (cg.getGameState() != SOCGame.OVER) && !(cg.getGameState() < SOCGame.START1A))
                 {
-                    /**
-                     * get a robot to replace this player
-                     */
+                    // get a robot to replace this player
                     messageToGameWithMon(gm, new SOCGameTextMsg(gm, SERVERNAME, "Fetching a robot player..."));
 
                     if (robots.isEmpty())
@@ -553,16 +470,12 @@ public class SOCServer extends Server
                     }
                     else
                     {
-                        /**
-                         * request a robot that isn't already playing this game or
-                         * is not already requested to play in this game
-                         */
+                        // request a robot that isn't already playing this game
+                        // or is not already requested to play in this game
                         boolean nameMatch = false;
                         Connection robotConn = null;
 
-                        ///
-                        /// shuffle the indexes to distribute load
-                        ///
+                        // shuffle the indexes to distribute load
                         int[] robotIndexes = new int[robots.size()];
 
                         for (int i = 0; i < robots.size(); i++)
@@ -646,16 +559,12 @@ public class SOCServer extends Server
 
                         if (!nameMatch && (cg != null))
                         {
-                            /**
-                             * make the request
-                             */
+                            // make the request
                             D.ebugPrintln("@@@ JOIN GAME REQUEST for " + (String) robotConn.data);
 
                             if (robotConn.put(SOCJoinGameRequest.toCmd(gm, playerNumber)))
                             {
-                                /**
-                                 * record the request
-                                 */
+                                // record the request
                                 if (requests == null)
                                 {
                                     requests = new Vector();
@@ -681,11 +590,8 @@ public class SOCServer extends Server
                 }
             }
 
-            /**
-             * if the game has no players, or if they're all
-             * robots, then end the game and write the data
-             * to disk.
-             */
+            // if the game has no players, or if they're all robots, then end
+            // the game and write the data to disk.
             boolean emptyGame = false;
             emptyGame = gameList.isGameEmpty(gm);
 
@@ -727,35 +633,29 @@ public class SOCServer extends Server
      *
      * @param gm  the name of the game
      */
-    public void destroyGame(String gm)
+    private void destroyGame(String gm)
     {
         //D.ebugPrintln("***** destroyGame("+gm+")");
-        SOCGame cg = null;
+        SOCGame game = gameList.getGameData(gm);
 
-        cg = gameList.getGameData(gm);
-
-        if (cg != null)
+        if (game != null)
         {
-            if (cg.getGameState() == SOCGame.OVER)
+            if (game.getGameState() == SOCGame.OVER)
             {
                 numberOfGamesFinished++;
             }
 
-            ///
-            /// write out game data
-            ///
+            // write out game data
 
             /*
-               currentGameEventRecord.setSnapshot(cg);
-               saveCurrentGameEventRecord(gm);
-               SOCGameRecord gr = (SOCGameRecord)gameRecords.get(gm);
+               saveCurrentGameEventRecord(game);
+               SOCGameRecord gr = (SOCGameRecord)gameRecords.get(game);
                writeGameRecord(gm, gr);
              */
 
-            //storeGameScores(cg);
-            ///
-            /// tell all robots to leave
-            ///
+            //storeGameScores(game);
+
+            // tell all robots to leave
             Vector members = null;
             members = gameList.getMembers(gm);
 
@@ -780,7 +680,7 @@ public class SOCServer extends Server
      * @param c  the connection
      * @return   the channels it was in
      */
-    public Vector leaveAllChannels(Connection c)
+    private Vector leaveAllChannels(Connection c)
     {
         if (c != null)
         {
@@ -826,9 +726,7 @@ public class SOCServer extends Server
 
             channelList.releaseMonitor();
 
-            /**
-             * let everyone know about the destroyed channels
-             */
+            // let everyone know about the destroyed channels
             for (Enumeration de = destroyed.elements(); de.hasMoreElements();)
             {
                 String ga = (String) de.nextElement();
@@ -849,7 +747,7 @@ public class SOCServer extends Server
      * @param c  the connection
      * @return   the games it was in
      */
-    public Vector leaveAllGames(Connection c)
+    private Vector leaveAllGames(Connection c)
     {
         if (c != null)
         {
@@ -897,9 +795,7 @@ public class SOCServer extends Server
 
             gameList.releaseMonitor();
 
-            /**
-             * let everyone know about the destroyed games
-             */
+            // let everyone know about the destroyed games
             for (Enumeration de = destroyed.elements(); de.hasMoreElements();)
             {
                 String ga = (String) de.nextElement();
@@ -921,7 +817,7 @@ public class SOCServer extends Server
      * @param ch  the name of the channel
      * @param mes the message to send
      */
-    public void messageToChannel(String ch, SOCMessage mes)
+    private void messageToChannel(String ch, SOCMessage mes)
     {
         channelList.takeMonitorForChannel(ch);
 
@@ -961,7 +857,7 @@ public class SOCServer extends Server
      * @param ch  the name of the channel
      * @param mes the message to send
      */
-    public void messageToChannelWithMon(String ch, SOCMessage mes)
+    private void messageToChannelWithMon(String ch, SOCMessage mes)
     {
         Vector v = channelList.getMembers(ch);
 
@@ -987,7 +883,7 @@ public class SOCServer extends Server
      * @param c   the player connection
      * @param mes the message to send
      */
-    public void messageToPlayer(Connection c, SOCMessage mes)
+    private void messageToPlayer(Connection c, SOCMessage mes)
     {
         if ((c != null) && (mes != null))
         {
@@ -1002,7 +898,7 @@ public class SOCServer extends Server
      * @param ga  the name of the game
      * @param mes the message to send
      */
-    public void messageToGame(String ga, SOCMessage mes)
+    private void messageToGame(String ga, SOCMessage mes)
     {
         gameList.takeMonitorForGame(ga);
 
@@ -1044,7 +940,7 @@ public class SOCServer extends Server
      * @param ga  the name of the game
      * @param mes the message to send
      */
-    public void messageToGameWithMon(String ga, SOCMessage mes)
+    private void messageToGameWithMon(String ga, SOCMessage mes)
     {
         Vector v = gameList.getMembers(ga);
 
@@ -1074,7 +970,7 @@ public class SOCServer extends Server
      * @param ex  the list of exceptions
      * @param mes the message
      */
-    public void messageToGameExcept(String gn, Vector ex, SOCMessage mes)
+    private void messageToGameExcept(String gn, Vector ex, SOCMessage mes)
     {
         gameList.takeMonitorForGame(gn);
 
@@ -1119,27 +1015,21 @@ public class SOCServer extends Server
             leaveAllChannels(c);
             leaveAllGames(c);
 
-            /**
-             * if it is a robot, remove it from the list
-             */
+            // if it is a robot, remove it from the list
             robots.removeElement(c);
         }
     }
 
     /**
-     * Things to do when a new connection comes
+     * Things to do when a new connection comes. Called only by superclass.
      *
      * @param c  the new Connection
      */
     protected void newConnection(Connection c)
     {
-        if (c != null)
+        try
         {
-            /**
-             * see if we are under the connection limit
-             */
-            try
-            {
+            // see if we are under the connection limit
                 if (this.connectionCount() >= maxConnections)
                 {
                     SOCRejectConnection rcCommand = new SOCRejectConnection("Too many connections, please try another server.");
@@ -1147,21 +1037,8 @@ public class SOCServer extends Server
 
                     return;
                 }
-            }
-            catch (Exception e)
-            {
-                D.ebugPrintln("Caught exception in SOCServer.newConnection(Connection) - " + e);
-                e.printStackTrace(System.out);
 
-                return;
-            }
-
-            try
-            {
-                /**
-                 * prevent someone from connecting twice from
-                 * the same machine
-                 */
+                // prevent someone from connecting twice from the same machine
                 boolean hostMatch = false;
 
                 /*
@@ -1247,12 +1124,11 @@ public class SOCServer extends Server
                        }
                      */
                 }
-            }
-            catch (Exception e)
-            {
-                D.ebugPrintln("Caught exception in SOCServer.newConnection(Connection) - " + e);
-                e.printStackTrace(System.out);
-            }
+        }
+        catch (Exception e)
+        {
+            D.ebugPrintln("Caught exception in SOCServer.newConnection(Connection) - " + e);
+            e.printStackTrace(System.out);
         }
     }
 
@@ -1301,44 +1177,39 @@ public class SOCServer extends Server
      */
     public void processCommand(String s, Connection c)
     {
+        if (c == null)
+            return;
+
         try
         {
             SOCMessage mes = (SOCMessage) SOCMessage.toMsg(s);
 
-            //D.ebugPrintln(c.data+" - "+mes);
+            // TODO: use a login message and check for it first, all others
+            // verify that (c.data != null)
+            
+            D.ebugPrintln(c.data+" - "+mes);
             if (mes != null)
             {
-                SOCGame ga;
+                SOCGame game;
 
                 switch (mes.getType())
                 {
-                /**
-                 * "join a channel" message
-                 */
+
                 case SOCMessage.JOIN:
                     handleJOIN(c, (SOCJoin) mes);
 
                     break;
 
-                /**
-                 * "leave a channel" message
-                 */
                 case SOCMessage.LEAVE:
                     handleLEAVE(c, (SOCLeave) mes);
 
                     break;
 
-                /**
-                 * "leave all channels" message
-                 */
                 case SOCMessage.LEAVEALL:
                     removeConnection(c);
 
                     break;
 
-                /**
-                 * text message
-                 */
                 case SOCMessage.TEXTMSG:
 
                     SOCTextMsg textMsgMes = (SOCTextMsg) mes;
@@ -1364,46 +1235,32 @@ public class SOCServer extends Server
                         }
                         else
                         {
-                            /**
-                             * Send the message to the members of the channel
-                             */
+                            // Send the message to the members of the channel
                             messageToChannel(textMsgMes.getChannel(), mes);
                         }
                     }
                     else
                     {
-                        /**
-                         * Send the message to the members of the channel
-                         */
+                        // Send the message to the members of the channel
                         messageToChannel(textMsgMes.getChannel(), mes);
                     }
 
                     break;
 
-                /**
-                 * a robot has connected to this server
-                 */
                 case SOCMessage.IMAROBOT:
                     handleIMAROBOT(c, (SOCImARobot) mes);
 
                     break;
 
-                /**
-                 * text message from a game
-                 */
                 case SOCMessage.GAMETEXTMSG:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     SOCGameTextMsg gameTextMsgMes = (SOCGameTextMsg) mes;
                     recordGameEvent(gameTextMsgMes.getGame(), gameTextMsgMes.toCmd());
 
-                    ga = gameList.getGameData(gameTextMsgMes.getGame());
+                    game = gameList.getGameData(gameTextMsgMes.getGame());
 
-                    //currentGameEventRecord.setSnapshot(ga);
-                    ///
-                    /// command to add time to a game
-                    ///
+                    // command to add time to a game
                     if ((gameTextMsgMes.getText().startsWith("*ADDTIME*")) || (gameTextMsgMes.getText().startsWith("*addtime*")) || (gameTextMsgMes.getText().startsWith("ADDTIME")) || (gameTextMsgMes.getText().startsWith("addtime")))
                     {
                         SOCGame gameData = gameList.getGameData(gameTextMsgMes.getGame());
@@ -1416,9 +1273,7 @@ public class SOCServer extends Server
                         }
                     }
 
-                    ///
-                    /// Check the time remaining for this game
-                    ///
+                    // Check the time remaining for this game
                     if (gameTextMsgMes.getText().startsWith("*CHECKTIME*"))
                     {
                         SOCGame gameData = gameList.getGameData(gameTextMsgMes.getGame());
@@ -1452,22 +1307,20 @@ public class SOCServer extends Server
                         }
                     }
 
-                    //
                     // useful for debuging 
-                    //
                     if (c.data.equals("debug"))
                     {
                         if (gameTextMsgMes.getText().startsWith("rsrcs:"))
                         {
-                            giveResources(gameTextMsgMes.getText(), ga);
+                            giveResources(gameTextMsgMes.getText(), game);
                         }
                         else if (gameTextMsgMes.getText().startsWith("dev:"))
                         {
-                            giveDevCard(gameTextMsgMes.getText(), ga);
+                            giveDevCard(gameTextMsgMes.getText(), game);
                         }
                         else if (gameTextMsgMes.getText().startsWith("*STARTGAME*"))
                         {
-                            handleSTARTGAME(c, new SOCStartGame(ga.getName()));
+                            handleSTARTGAME(c, new SOCStartGame(game.getName()));
                         }
                         else if (gameTextMsgMes.getText().startsWith("*KILLGAME*"))
                         {
@@ -1517,9 +1370,7 @@ public class SOCServer extends Server
                         }
                         else if (gameTextMsgMes.getText().startsWith("*BCAST* "))
                         {
-                            ///
-                            /// broadcast to all chat channels and games
-                            ///
+                            // broadcast to all chat channels and games
                             broadcast(SOCBCastTextMsg.toCmd(gameTextMsgMes.getText().substring(8)));
                         }
                         else if (gameTextMsgMes.getText().startsWith("*BOTLIST*"))
@@ -1579,274 +1430,206 @@ public class SOCServer extends Server
                         }
                         else
                         {
-                            //
                             // Send the message to the members of the game
-                            //
                             messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), (String) c.data, gameTextMsgMes.getText()));
                         }
                     }
                     else
                     {
-                        //
                         // Send the message to the members of the game
-                        //
                         messageToGame(gameTextMsgMes.getGame(), new SOCGameTextMsg(gameTextMsgMes.getGame(), (String) c.data, gameTextMsgMes.getText()));
                     }
 
-                    //saveCurrentGameEventRecord(gameTextMsgMes.getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
-                /**
-                 * "join a game" message
-                 */
                 case SOCMessage.JOINGAME:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleJOINGAME(c, (SOCJoinGame) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCJoinGame)mes).getGame());
-                    //if (ga != null) {
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCJoinGame)mes).getGame());
-                    //}
+                    //game = gameList.getGameData(((SOCJoinGame)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
-                /**
-                 * "leave a game" message
-                 */
                 case SOCMessage.LEAVEGAME:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleLEAVEGAME(c, (SOCLeaveGame) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCLeaveGame)mes).getGame());
-                    //if (ga != null) {
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCLeaveGame)mes).getGame());
-                    //}
+                    //game = gameList.getGameData(((SOCLeaveGame)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
-                /**
-                 * someone wants to sit down
-                 */
                 case SOCMessage.SITDOWN:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleSITDOWN(c, (SOCSitDown) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCSitDown)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCSitDown)mes).getGame());
+                    //game = gameList.getGameData(((SOCSitDown)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
-                /**
-                 * someone put a piece on the board
-                 */
                 case SOCMessage.PUTPIECE:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handlePUTPIECE(c, (SOCPutPiece) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCPutPiece)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCPutPiece)mes).getGame());
+                    //game = gameList.getGameData(((SOCPutPiece)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
-                /**
-                 * a player is moving the robber
-                 */
                 case SOCMessage.MOVEROBBER:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleMOVEROBBER(c, (SOCMoveRobber) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCMoveRobber)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCMoveRobber)mes).getGame());
+                    //game = gameList.getGameData(((SOCMoveRobber)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
-                /**
-                 * someone is starting a game
-                 */
                 case SOCMessage.STARTGAME:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleSTARTGAME(c, (SOCStartGame) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCStartGame)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCStartGame)mes).getGame());
+                    //game = gameList.getGameData(((SOCStartGame)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.ROLLDICE:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleROLLDICE(c, (SOCRollDice) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCRollDice)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCRollDice)mes).getGame());
+                    //game = gameList.getGameData(((SOCRollDice)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.DISCARD:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleDISCARD(c, (SOCDiscard) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCDiscard)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCDiscard)mes).getGame());
+                    //game = gameList.getGameData(((SOCDiscard)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.ENDTURN:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleENDTURN(c, (SOCEndTurn) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCEndTurn)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCEndTurn)mes).getGame());
+                    //game = gameList.getGameData(((SOCEndTurn)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.CHOOSEPLAYER:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleCHOOSEPLAYER(c, (SOCChoosePlayer) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCChoosePlayer)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCChoosePlayer)mes).getGame());
+                    //game = gameList.getGameData(((SOCChoosePlayer)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.MAKEOFFER:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleMAKEOFFER(c, (SOCMakeOffer) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCMakeOffer)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCMakeOffer)mes).getGame());
+                    //game = gameList.getGameData(((SOCMakeOffer)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.CLEAROFFER:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleCLEAROFFER(c, (SOCClearOffer) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCClearOffer)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCClearOffer)mes).getGame());
+                    //game = gameList.getGameData(((SOCClearOffer)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.REJECTOFFER:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleREJECTOFFER(c, (SOCRejectOffer) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCRejectOffer)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCRejectOffer)mes).getGame());
+                    //game = gameList.getGameData(((SOCRejectOffer)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.ACCEPTOFFER:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleACCEPTOFFER(c, (SOCAcceptOffer) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCAcceptOffer)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCAcceptOffer)mes).getGame());
+                    //game = gameList.getGameData(((SOCAcceptOffer)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.BANKTRADE:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleBANKTRADE(c, (SOCBankTrade) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCBankTrade)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCBankTrade)mes).getGame());
+                    //game = gameList.getGameData(((SOCBankTrade)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.BUILDREQUEST:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleBUILDREQUEST(c, (SOCBuildRequest) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCBuildRequest)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCBuildRequest)mes).getGame());
+                    //game = gameList.getGameData(((SOCBuildRequest)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.CANCELBUILDREQUEST:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleCANCELBUILDREQUEST(c, (SOCCancelBuildRequest) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCCancelBuildRequest)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCCancelBuildRequest)mes).getGame());
+                    //game = gameList.getGameData(((SOCCancelBuildRequest)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.BUYCARDREQUEST:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleBUYCARDREQUEST(c, (SOCBuyCardRequest) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCBuyCardRequest)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCBuyCardRequest)mes).getGame());
+                    //game = gameList.getGameData(((SOCBuyCardRequest)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.PLAYDEVCARDREQUEST:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handlePLAYDEVCARDREQUEST(c, (SOCPlayDevCardRequest) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCPlayDevCardRequest)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCPlayDevCardRequest)mes).getGame());
+                    //game = gameList.getGameData(((SOCPlayDevCardRequest)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.DISCOVERYPICK:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleDISCOVERYPICK(c, (SOCDiscoveryPick) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCDiscoveryPick)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCDiscoveryPick)mes).getGame());
+                    //game = gameList.getGameData(((SOCDiscoveryPick)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.MONOPOLYPICK:
 
-                    //createNewGameEventRecord();
-                    //currentGameEventRecord.setMessageIn(new SOCMessageRecord(mes, c.data, "SERVER"));
+                    //createNewGameEventRecord(new SOCMessageRecord(mes, c.data, "SERVER"));
                     handleMONOPOLYPICK(c, (SOCMonopolyPick) mes);
 
-                    //ga = (SOCGame)gamesData.get(((SOCMonopolyPick)mes).getGame());
-                    //currentGameEventRecord.setSnapshot(ga);
-                    //saveCurrentGameEventRecord(((SOCMonopolyPick)mes).getGame());
+                    //game = gameList.getGameData(((SOCMonopolyPick)mes).getGame());
+                    //saveCurrentGameEventRecord(game);
                     break;
 
                 case SOCMessage.CHANGEFACE:
@@ -1923,15 +1706,12 @@ public class SOCServer extends Server
             return false;
         }
 
-        //
         // Update the last login time
-        //
-        Date currentTime = new Date();
+        //Date currentTime = new Date();
 
         //SOCDBHelper.updateLastlogin(userName, currentTime.getTime());
-        //
+
         // Record the login info for this user
-        //
         //SOCDBHelper.recordLogin(userName, c.host(), currentTime.getTime());
         return true;
     }
@@ -1944,13 +1724,9 @@ public class SOCServer extends Server
      */
     private void handleJOIN(Connection c, SOCJoin mes)
     {
-        if (c != null)
-        {
             D.ebugPrintln("handleJOIN: " + mes);
 
-            /**
-             * Check that the nickname is ok
-             */
+            // Check that the nickname is ok
             if ((c.data == null) && (!checkNickname(mes.getNickname())))
             {
                 c.put(SOCStatusMessage.toCmd("Someone with that nickname is already logged into the system."));
@@ -1963,10 +1739,7 @@ public class SOCServer extends Server
                 return;
             }
 
-            /**
-             * Check that the channel name is ok
-             */
-
+            // Check that the channel name is ok
             /*
                if (!checkChannelName(mes.getChannel())) {
                return;
@@ -1978,15 +1751,11 @@ public class SOCServer extends Server
                 numberOfUsers++;
             }
 
-            /**
-             * Tell the client that everything is good to go
-             */
+            // Tell the client that everything is good to go
             c.put(SOCJoinAuth.toCmd(mes.getNickname(), mes.getChannel()));
             c.put(SOCStatusMessage.toCmd("Welcome to Java Settlers of Catan!"));
 
-            /**
-             * Add the Connection to the channel
-             */
+            // Add the Connection to the channel
             String ch = mes.getChannel();
 
             if (channelList.takeMonitorForChannel(ch))
@@ -2004,9 +1773,7 @@ public class SOCServer extends Server
             }
             else
             {
-                /**
-                 * the channel did not exist, create it
-                 */
+                // the channel did not exist, create it
                 channelList.takeMonitor();
 
                 try
@@ -2036,11 +1803,8 @@ public class SOCServer extends Server
                 channelList.releaseMonitorForChannel(ch);
             }
 
-            /**
-             * let everyone know about the change
-             */
+            // let everyone know about the change
             messageToChannel(ch, new SOCJoin(mes.getNickname(), "", "dummyhost", ch));
-        }
     }
 
     /**
@@ -2053,8 +1817,6 @@ public class SOCServer extends Server
     {
         D.ebugPrintln("handleLEAVE: " + mes);
 
-        if (c != null)
-        {
             boolean destroyedChannel = false;
             channelList.takeMonitorForChannel(mes.getChannel());
 
@@ -2073,7 +1835,6 @@ public class SOCServer extends Server
             {
                 broadcast(SOCDeleteChannel.toCmd(mes.getChannel()));
             }
-        }
     }
 
     /**
@@ -2084,13 +1845,10 @@ public class SOCServer extends Server
      */
     private void handleIMAROBOT(Connection c, SOCImARobot mes)
     {
-        if (c != null)
-        {
             boolean useDefault = false;
-			SOCRobotParameters params = null;
-            //
+            SOCRobotParameters params = null;
+
             // send the current robot parameters
-            //
             try
             {
                 params = SOCDBHelper.retrieveRobotParams(mes.getNickname());
@@ -2121,12 +1879,9 @@ public class SOCServer extends Server
                 c.put(SOCUpdateRobotParams.toCmd(params));
             }
 
-            //
             // add this connection to the robot list
-            //
             c.data = mes.getNickname();
             robots.addElement(c);
-        }
     }
 
     /**
@@ -2137,13 +1892,9 @@ public class SOCServer extends Server
      */
     private void handleJOINGAME(Connection c, SOCJoinGame mes)
     {
-        if (c != null)
-        {
             D.ebugPrintln("handleJOINGAME: " + mes);
 
-            /**
-             * Check that the nickname is ok
-             */
+            // Check that the nickname is ok
             if ((c.data == null) && (!checkNickname(mes.getNickname())))
             {
                 c.put(SOCStatusMessage.toCmd("Someone with that nickname is already logged into the system."));
@@ -2156,35 +1907,25 @@ public class SOCServer extends Server
                 return;
             }
 
-            if (c != null)
-            {
                 if (c.data == null)
                 {
                     c.data = mes.getNickname();
                     numberOfUsers++;
                 }
-            }
 
-            /**
-             * Check that the game name is ok
-             */
-
+            // Check that the game name is ok
             /*
                if (!checkGameName(mes.getGame())) {
                return;
                }
              */
 
-            /**
-             * Tell the client that everything is good to go
-             */
+            // Tell the client that everything is good to go
             if (connectToGame(c, mes.getGame()))
             {
                 String gameName = mes.getGame();
 
-                /**
-                 * send the entire state of the game
-                 */
+                // send the entire state of the game
                 SOCGame gameData = gameList.getGameData(gameName);
 
                 if (gameData != null)
@@ -2202,9 +1943,7 @@ public class SOCServer extends Server
                             c.put(SOCSitDown.toCmd(gameName, pl.getName(), i, pl.isRobot()));
                         }
 
-                        /**
-                         * send the seat lock information
-                         */
+                        // send the seat lock information
                         messageToPlayer(c, new SOCSetSeatLock(gameName, i, gameData.isSeatLocked(i)));
                     }
 
@@ -2231,9 +1970,7 @@ public class SOCServer extends Server
                                 c.put(SOCPutPiece.toCmd(gameName, i, piece.getType(), piece.getCoordinates()));
                             }
 
-                            /**
-                             * send potential settlement list
-                             */
+                            // send potential settlement list
                             Vector psList = new Vector();
 
                             for (int j = 0x23; j <= 0xDC; j++)
@@ -2246,14 +1983,10 @@ public class SOCServer extends Server
 
                             c.put(SOCPotentialSettlements.toCmd(gameName, i, psList));
 
-                            /**
-                             * send coords of the last settlement
-                             */
+                            // send coords of the last settlement
                             c.put(SOCLastSettlement.toCmd(gameName, i, pl.getLastSettlementCoord()));
 
-                            /**
-                             * send number of playing pieces in hand
-                             */
+                            // send number of playing pieces in hand
                             c.put(SOCPlayerElement.toCmd(gameName, i, SOCPlayerElement.SET, SOCPlayerElement.ROADS, pl.getNumPieces(SOCPlayingPiece.ROAD)));
                             c.put(SOCPlayerElement.toCmd(gameName, i, SOCPlayerElement.SET, SOCPlayerElement.SETTLEMENTS, pl.getNumPieces(SOCPlayingPiece.SETTLEMENT)));
                             c.put(SOCPlayerElement.toCmd(gameName, i, SOCPlayerElement.SET, SOCPlayerElement.CITIES, pl.getNumPieces(SOCPlayingPiece.CITY)));
@@ -2279,9 +2012,7 @@ public class SOCServer extends Server
                         }
                     }
 
-                    /// 
-                    /// send who has longest road
-                    ///
+                    // send who has longest road
                     SOCPlayer lrPlayer = gameData.getPlayerWithLongestRoad();
                     int lrPlayerNum = -1;
 
@@ -2292,9 +2023,7 @@ public class SOCServer extends Server
 
                     c.put(SOCLongestRoad.toCmd(gameName, lrPlayerNum));
 
-                    ///
-                    /// send who has largest army
-                    ///
+                    // send who has largest army
                     SOCPlayer laPlayer = gameData.getPlayerWithLargestArmy();
                     int laPlayerNum = -1;
 
@@ -2325,13 +2054,11 @@ public class SOCServer extends Server
                     D.ebugPrintln("*** " + c.data + " joined the game " + gameName);
 
                     //messageToGame(gameName, new SOCGameTextMsg(gameName, SERVERNAME, n+" joined the game"));
-                    /**
-                     * Let everyone else know about the change
-                     */
+
+                    // Let everyone else know about the change
                     messageToGame(mes.getGame(), new SOCJoinGame(mes.getNickname(), "", "dummyhost", mes.getGame()));
                 }
             }
-        }
     }
 
     /**
@@ -2342,8 +2069,6 @@ public class SOCServer extends Server
      */
     private void handleLEAVEGAME(Connection c, SOCLeaveGame mes)
     {
-        if (c != null)
-        {
             boolean isMember = false;
             gameList.takeMonitorForGame(mes.getGame());
 
@@ -2387,41 +2112,25 @@ public class SOCServer extends Server
                      */
                 }
 
-                /**
-                 * if it's a robot, remove it from the request list
-                 */
-                Vector requests = (Vector) robotDismissRequests.get(mes.getGame());
+                // if a robot is leaving, it's likely that a real player
+                // requested it.  If this connection is the leaving robot, get
+                // the sit request from the player, and fulfill it
+                Map dismissals = (Map) robotDismissals.get(mes.getGame());
 
-                if (requests != null)
+                if (dismissals != null)
                 {
-                    Enumeration reqEnum = requests.elements();
-                    SOCReplaceRequest req = null;
-
-                    while (reqEnum.hasMoreElements())
-                    {
-                        SOCReplaceRequest tempReq = (SOCReplaceRequest) reqEnum.nextElement();
-
-                        if (tempReq.getLeaving() == c)
-                        {
-                            req = tempReq;
-
-                            break;
-                        }
-                    }
-
+                    SOCReplaceRequest req = (SOCReplaceRequest) dismissals.remove(c);
                     if (req != null)
                     {
-                        requests.removeElement(req);
-
-                        /**
-                         * let the person replacing the robot sit down
-                         */
-                        SOCGame ga = gameList.getGameData(mes.getGame());
-                        sitDown(ga, req.getArriving(), req.getSitDownMessage().getPlayerNumber(), req.getSitDownMessage().isRobot());
+                        SOCSitDown msg = req.getSitDownMessage();
+                        SOCGame game = gameList.getGameData(mes.getGame());
+                        if (game != null)
+                        {
+                            sitDown(game, req.getArriving(), msg.getPlayerNumber(), msg.isRobot());
+                        }
                     }
                 }
             }
-        }
     }
 
     /**
@@ -2432,15 +2141,11 @@ public class SOCServer extends Server
      */
     private void handleSITDOWN(Connection c, SOCSitDown mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
             {
-                /**
-                 * make sure this player isn't already sitting
-                 */
+                // make sure this player isn't already sitting
                 boolean canSit = true;
 
                 /*
@@ -2452,9 +2157,8 @@ public class SOCServer extends Server
                    }
                  */
                 //D.ebugPrintln("ga.isSeatVacant(mes.getPlayerNumber()) = "+ga.isSeatVacant(mes.getPlayerNumber()));
-                /**
-                 * make sure a person isn't sitting here already
-                 */
+
+                // make sure a person isn't sitting here already
                 ga.takeMonitor();
 
                 try
@@ -2465,9 +2169,7 @@ public class SOCServer extends Server
 
                         if (seatedPlayer.isRobot() && (!ga.isSeatLocked(mes.getPlayerNumber())) && (ga.getCurrentPlayerNumber() != mes.getPlayerNumber()))
                         {
-                            /**
-                             * boot the robot out of the game
-                             */
+                            // boot the robot out of the game
                             Connection robotCon = null;
                             Enumeration conEnum = getConnections();
 
@@ -2485,23 +2187,17 @@ public class SOCServer extends Server
 
                             robotCon.put(SOCRobotDismiss.toCmd(mes.getGame()));
 
-                            /**
-                             * this connection has to wait for the robot to leave
-                             * and then it can sit down
-                             */
-                            Vector disRequests = (Vector) robotDismissRequests.get(mes.getGame());
+                            // this connection has to wait for the robot to
+                            // leave and then it can sit down
+                            Map dismissals = (Map) robotDismissals.get(mes.getGame());
                             SOCReplaceRequest req = new SOCReplaceRequest(c, robotCon, mes);
 
-                            if (disRequests == null)
+                            if (dismissals == null)
                             {
-                                disRequests = new Vector();
-                                disRequests.addElement(req);
-                                robotDismissRequests.put(mes.getGame(), disRequests);
+                                dismissals = new HashMap();
+                                robotDismissals.put(mes.getGame(), dismissals);
                             }
-                            else
-                            {
-                                disRequests.addElement(req);
-                            }
+                            dismissals.put(robotCon, req);
                         }
 
                         canSit = false;
@@ -2514,9 +2210,7 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
 
-                /**
-                 * if this is a robot, remove it from the request list
-                 */
+                // if this is a robot, remove it from the request list
                 Vector joinRequests = (Vector) robotJoinRequests.get(mes.getGame());
 
                 if (joinRequests != null)
@@ -2531,16 +2225,13 @@ public class SOCServer extends Server
                 }
                 else
                 {
-                    /**
-                     * if the robot can't sit, tell it to go away
-                     */
+                    // if the robot can't sit, tell it to go away
                     if (mes.isRobot())
                     {
                         c.put(SOCRobotDismiss.toCmd(mes.getGame()));
                     }
                 }
             }
-        }
     }
 
     /**
@@ -2551,8 +2242,6 @@ public class SOCServer extends Server
      */
     private void handlePUTPIECE(Connection c, SOCPutPiece mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -2563,9 +2252,7 @@ public class SOCServer extends Server
                 {
                     SOCPlayer player = ga.getPlayer((String) c.data);
 
-                    /**
-                     * make sure the player can do it
-                     */
+                    // make sure the player can do it
                     if (checkTurn(c, ga))
                     {
                         /*
@@ -2705,7 +2392,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -2716,8 +2402,6 @@ public class SOCServer extends Server
      */
     private void handleMOVEROBBER(Connection c, SOCMoveRobber mes)
     {
-        if (c != null)
-        {
             String gn = mes.getGame();
             SOCGame ga = gameList.getGameData(gn);
 
@@ -2729,9 +2413,7 @@ public class SOCServer extends Server
                 {
                     SOCPlayer player = ga.getPlayer((String) c.data);
 
-                    /**
-                     * make sure the player can do it
-                     */
+                    // make sure the player can do it
                     if (ga.canMoveRobber(player.getPlayerNumber(), mes.getCoordinates()))
                     {
                         SOCMoveRobberResult result = ga.moveRobber(player.getPlayerNumber(), mes.getCoordinates());
@@ -2740,19 +2422,15 @@ public class SOCServer extends Server
 
                         Vector victims = result.getVictims();
 
-                        /** only one possible victim */
+                        // only one possible victim
                         if (victims.size() == 1)
                         {
-                            /**
-                             * report what was stolen
-                             */
+                            // report what was stolen
                             SOCPlayer victim = (SOCPlayer) victims.firstElement();
                             reportRobbery(ga, player, victim, result.getLoot());
                         }
 
-                        /**
-                         * else, the player needs to choose a victim
-                         */
+                        // else, the player needs to choose a victim
                         sendGameState(ga);
                     }
                     else
@@ -2768,7 +2446,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -2779,8 +2456,6 @@ public class SOCServer extends Server
      */
     private void handleSTARTGAME(Connection c, SOCStartGame mes)
     {
-        if (c != null)
-        {
             String gn = mes.getGame();
             SOCGame ga = gameList.getGameData(gn);
 
@@ -2814,9 +2489,7 @@ public class SOCServer extends Server
                             }
                             else
                             {
-                                //
                                 // count the number of empty seats
-                                //
                                 int numEmpty = 0;
 
                                 for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
@@ -2827,9 +2500,7 @@ public class SOCServer extends Server
                                     }
                                 }
 
-                                //
                                 // make sure there are enough robots connected
-                                //
                                 if (numEmpty > robots.size())
                                 {
                                     String m = "Sorry, not enough robots to fill all the seats.  Only " + robots.size() + " robots are available.";
@@ -2839,13 +2510,9 @@ public class SOCServer extends Server
                                 {
                                     ga.setGameState(SOCGame.READY);
 
-                                    /**
-                                     * Fill all the empty seats with robots
-                                     */
+                                    // Fill all the empty seats with robots
 
-                                    ///
-                                    /// shuffle the indexes to distribute load
-                                    ///
+                                    // shuffle the indexes to distribute load
                                     int[] robotIndexes = new int[robots.size()];
 
                                     for (int i = 0; i < robots.size(); i++)
@@ -2880,9 +2547,7 @@ public class SOCServer extends Server
                                     {
                                         if (ga.isSeatVacant(i))
                                         {
-                                            /**
-                                             * fetch a robot player
-                                             */
+                                            // fetch a robot player
                                             if (idx < robots.size())
                                             {
                                                 messageToGame(gn, new SOCGameTextMsg(gn, SERVERNAME, "Fetching a robot player..."));
@@ -2890,14 +2555,10 @@ public class SOCServer extends Server
                                                 Connection robotConn = (Connection) robots.get(robotIndexes[idx]);
                                                 idx++;
 
-                                                /**
-                                                 * make the request
-                                                 */
+                                                // make the request
                                                 if (robotConn.put(SOCJoinGameRequest.toCmd(gn, i)))
                                                 {
-                                                    /**
-                                                     * record the request
-                                                     */
+                                                    // record the request
                                                     D.ebugPrintln("@@@ JOIN GAME REQUEST for " + (String) robotConn.data);
                                                     requests.addElement(robotConn);
                                                 }
@@ -2913,10 +2574,9 @@ public class SOCServer extends Server
                             }
                         }
 
-                        /**
-                         * If this doesn't need robots, then start the game.
-                         * Otherwise wait for them to sit before starting the game.
-                         */
+                        // If this doesn't need robots, then start the game.
+                        // Otherwise wait for them to sit before starting the
+                        // game.
                         if (seatsFull)
                         {
                             startGame(ga);
@@ -2938,7 +2598,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -2949,8 +2608,6 @@ public class SOCServer extends Server
      */
     private void handleROLLDICE(Connection c, SOCRollDice mes)
     {
-        if (c != null)
-        {
             String gn = mes.getGame();
             SOCGame ga = gameList.getGameData(gn);
 
@@ -2966,9 +2623,7 @@ public class SOCServer extends Server
                         messageToGame(gn, new SOCGameTextMsg(gn, SERVERNAME, (String) c.data + " rolled a " + dice.getA() + " and a " + dice.getB() + "."));
                         messageToGame(gn, new SOCDiceResult(gn, ga.getCurrentDice()));
 
-                        /**
-                         * if the roll is not 7, tell players what they got
-                         */
+                        // if the roll is not 7, tell players what they got
                         if (ga.getCurrentDice() != 7)
                         {
                             for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
@@ -3047,9 +2702,7 @@ public class SOCServer extends Server
                                     messageToGame(gn, new SOCGameTextMsg(gn, SERVERNAME, message));
                                 }
 
-                                //
                                 //  send all resource info for accuracy
-                                //
                                 Connection playerCon = null;
                                 Enumeration conEnum = getConnections();
 
@@ -3095,9 +2748,7 @@ public class SOCServer extends Server
                         }
                         else
                         {
-                            /**
-                             * player rolled 7
-                             */
+                            // player rolled 7
                             for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                             {
                                 if (ga.getPlayer(i).getResources().getTotal() > 7)
@@ -3133,7 +2784,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3144,8 +2794,6 @@ public class SOCServer extends Server
      */
     private void handleDISCARD(Connection c, SOCDiscard mes)
     {
-        if (c != null)
-        {
             String gn = mes.getGame();
             SOCGame ga = gameList.getGameData(gn);
 
@@ -3161,29 +2809,19 @@ public class SOCServer extends Server
                     {
                         ga.discard(player.getPlayerNumber(), mes.getResources());
 
-                        /**
-                         * tell the player client that the player discarded the resources
-                         */
+                        // tell the player client that the player discarded the resources
                         int cl;
 
-                        /**
-                         * tell the player client that the player discarded the resources
-                         */
+                        // tell the player client that the player discarded the resources
                         int or;
 
-                        /**
-                         * tell the player client that the player discarded the resources
-                         */
+                        // tell the player client that the player discarded the resources
                         int sh;
 
-                        /**
-                         * tell the player client that the player discarded the resources
-                         */
+                        // tell the player client that the player discarded the resources
                         int wh;
 
-                        /**
-                         * tell the player client that the player discarded the resources
-                         */
+                        // tell the player client that the player discarded the resources
                         int wo;
                         cl = mes.getResources().getAmount(SOCResourceConstants.CLAY);
                         or = mes.getResources().getAmount(SOCResourceConstants.ORE);
@@ -3216,9 +2854,7 @@ public class SOCServer extends Server
                             messageToPlayer(c, new SOCPlayerElement(gn, player.getPlayerNumber(), SOCPlayerElement.LOSE, SOCPlayerElement.WOOD, wo));
                         }
 
-                        /**
-                         * tell everyone else that the player discarded unknown resources
-                         */
+                        // tell everyone else that the player discarded unknown resources
                         Vector exceptions = new Vector(1);
                         exceptions.addElement(c);
                         messageToGameExcept(gn, exceptions, new SOCPlayerElement(gn, player.getPlayerNumber(), SOCPlayerElement.LOSE, SOCPlayerElement.UNKNOWN, mes.getResources().getTotal()));
@@ -3227,9 +2863,7 @@ public class SOCServer extends Server
                     }
                     else
                     {
-                        /**
-                         * there could be a better feedback message here
-                         */
+                        // there could be a better feedback message here
                         c.put(SOCGameTextMsg.toCmd(ga.getName(), SERVERNAME, "You can't discard that many cards."));
                     }
                 }
@@ -3241,7 +2875,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3252,8 +2885,6 @@ public class SOCServer extends Server
      */
     private void handleENDTURN(Connection c, SOCEndTurn mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3269,17 +2900,13 @@ public class SOCServer extends Server
                             ga.endTurn();
                             sendGameState(ga);
 
-                            /**
-                             * clear any trade offers
-                             */
+                            // clear any trade offers
                             for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                             {
                                 messageToGame(ga.getName(), new SOCClearOffer(ga.getName(), i));
                             }
 
-                            /**
-                             * send who's turn it is
-                             */
+                            // send who's turn it is
                             sendTurn(ga);
                         }
                         else
@@ -3300,7 +2927,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3311,8 +2937,6 @@ public class SOCServer extends Server
      */
     private void handleCHOOSEPLAYER(Connection c, SOCChoosePlayer mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3347,7 +2971,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3358,8 +2981,6 @@ public class SOCServer extends Server
      */
     private void handleMAKEOFFER(Connection c, SOCMakeOffer mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3370,10 +2991,8 @@ public class SOCServer extends Server
                 {
                     SOCTradeOffer offer = mes.getOffer();
 
-                    /**
-                     * remake the offer with data that we know is accurate,
-                     * namely the 'from' datum
-                     */
+                    // remake the offer with data that we know is accurate,
+                    // namely the 'from' datum
                     SOCPlayer player = ga.getPlayer((String) c.data);
 
                     if (player != null)
@@ -3387,9 +3006,7 @@ public class SOCServer extends Server
 
                         recordGameEvent(ga.getName(), makeOfferMessage.toCmd());
 
-                        /**
-                         * clear all the trade messages because a new offer has been made
-                         */
+                        // clear all the trade messages because a new offer has been made
                         for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                         {
                             messageToGame(ga.getName(), new SOCClearTradeMsg(ga.getName(), i));
@@ -3404,7 +3021,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3415,8 +3031,6 @@ public class SOCServer extends Server
      */
     private void handleCLEAROFFER(Connection c, SOCClearOffer mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3429,9 +3043,7 @@ public class SOCServer extends Server
                     messageToGame(ga.getName(), new SOCClearOffer(ga.getName(), ga.getPlayer((String) c.data).getPlayerNumber()));
                     recordGameEvent(mes.getGame(), mes.toCmd());
 
-                    /**
-                     * clear all the trade messages
-                     */
+                    // clear all the trade messages
                     for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                     {
                         messageToGame(ga.getName(), new SOCClearTradeMsg(ga.getName(), i));
@@ -3445,7 +3057,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3456,8 +3067,6 @@ public class SOCServer extends Server
      */
     private void handleREJECTOFFER(Connection c, SOCRejectOffer mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3472,7 +3081,6 @@ public class SOCServer extends Server
                     recordGameEvent(ga.getName(), rejectMessage.toCmd());
                 }
             }
-        }
     }
 
     /**
@@ -3483,8 +3091,6 @@ public class SOCServer extends Server
      */
     private void handleACCEPTOFFER(Connection c, SOCAcceptOffer mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3506,18 +3112,14 @@ public class SOCServer extends Server
 
                             recordGameEvent(mes.getGame(), mes.toCmd());
 
-                            /**
-                             * clear all offers
-                             */
+                            // clear all offers
                             for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                             {
                                 ga.getPlayer(i).setCurrentOffer(null);
                                 messageToGame(ga.getName(), new SOCClearOffer(ga.getName(), i));
                             }
 
-                            /**
-                             * send a message to the bots that the offer was accepted
-                             */
+                            // send a message to the bots that the offer was accepted
                             messageToGame(ga.getName(), mes);
                         }
                         else
@@ -3534,7 +3136,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3545,8 +3146,6 @@ public class SOCServer extends Server
      */
     private void handleBANKTRADE(Connection c, SOCBankTrade mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3580,7 +3179,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3591,8 +3189,6 @@ public class SOCServer extends Server
      */
     private void handleBUILDREQUEST(Connection c, SOCBuildRequest mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3678,7 +3274,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3689,8 +3284,6 @@ public class SOCServer extends Server
      */
     private void handleCANCELBUILDREQUEST(Connection c, SOCCancelBuildRequest mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3769,7 +3362,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3780,8 +3372,6 @@ public class SOCServer extends Server
      */
     private void handleBUYCARDREQUEST(Connection c, SOCBuyCardRequest mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3848,7 +3438,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3859,8 +3448,6 @@ public class SOCServer extends Server
      */
     private void handlePLAYDEVCARDREQUEST(Connection c, SOCPlayDevCardRequest mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -3959,7 +3546,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -3970,8 +3556,6 @@ public class SOCServer extends Server
      */
     private void handleDISCOVERYPICK(Connection c, SOCDiscoveryPick mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -4072,7 +3656,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -4083,8 +3666,6 @@ public class SOCServer extends Server
      */
     private void handleMONOPOLYPICK(Connection c, SOCMonopolyPick mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -4131,15 +3712,11 @@ public class SOCServer extends Server
 
                             messageToGame(ga.getName(), new SOCGameTextMsg(ga.getName(), SERVERNAME, message));
 
-                            /**
-                             * just send all the player's resource counts for the
-                             * monopolized resource
-                             */
+                            // just send all the player's resource counts for
+                            // the monopolized resource
                             for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                             {
-                                /**
-                                 * Note: This only works if SOCPlayerElement.CLAY == SOCResourceConstants.CLAY
-                                 */
+                                // Note: This only works if SOCPlayerElement.CLAY == SOCResourceConstants.CLAY
                                 messageToGame(ga.getName(), new SOCPlayerElement(ga.getName(), i, SOCPlayerElement.SET, mes.getResource(), ga.getPlayer(i).getResources().getAmount(mes.getResource())));
                             }
 
@@ -4163,7 +3740,6 @@ public class SOCServer extends Server
 
                 ga.releaseMonitor();
             }
-        }
     }
 
     /**
@@ -4174,8 +3750,6 @@ public class SOCServer extends Server
      */
     private void handleCHANGEFACE(Connection c, SOCChangeFace mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -4188,7 +3762,6 @@ public class SOCServer extends Server
                     messageToGame(mes.getGame(), new SOCChangeFace(mes.getGame(), player.getPlayerNumber(), mes.getFaceId()));
                 }
             }
-        }
     }
 
     /**
@@ -4199,8 +3772,6 @@ public class SOCServer extends Server
      */
     private void handleSETSEATLOCK(Connection c, SOCSetSeatLock mes)
     {
-        if (c != null)
-        {
             SOCGame ga = gameList.getGameData(mes.getGame());
 
             if (ga != null)
@@ -4221,7 +3792,6 @@ public class SOCServer extends Server
                     messageToGame(mes.getGame(), mes);
                 }
             }
-        }
     }
 
     /**
@@ -4232,10 +3802,7 @@ public class SOCServer extends Server
      */
     private void handleCREATEACCOUNT(Connection c, SOCCreateAccount mes)
     {
-        //
-        // check to see if there is an account with
-        // the requested nickname
-        //
+        // check to see if there is an account with the requested nickname
         String userPassword = null;
 
         try
@@ -4261,9 +3828,7 @@ public class SOCServer extends Server
             return;
         }
 
-        //
         // create the account
-        //
         Date currentTime = new Date();
 
         boolean success = false;
@@ -4301,11 +3866,10 @@ public class SOCServer extends Server
      * @param c      the connection for the player
      * @param pn     which seat the player is taking
      * @param robot  true if this player is a robot
+     * @throws NullPointerExceptioin if ga or c are null
      */
     private void sitDown(SOCGame ga, Connection c, int pn, boolean robot)
     {
-        if ((c != null) && (ga != null))
-        {
             ga.takeMonitor();
 
             try
@@ -4313,9 +3877,7 @@ public class SOCServer extends Server
                 ga.addPlayer((String) c.data, pn);
                 ga.getPlayer(pn).setRobotFlag(robot);
 
-                /**
-                 * if the player can sit, then tell the other clients in the game
-                 */
+                // if the player can sit, then tell the other clients in the game
                 SOCSitDown sitMessage = new SOCSitDown(ga.getName(), (String) c.data, pn, robot);
                 messageToGame(ga.getName(), sitMessage);
 
@@ -4327,18 +3889,14 @@ public class SOCServer extends Server
 
                 if (requests != null)
                 {
-                    /**
-                     * if the request list is empty and the game hasn't started yet,
-                     * then start the game
-                     */
+                    // if the request list is empty and the game hasn't started
+                    // yet, then start the game
                     if (requests.isEmpty() && (ga.getGameState() < SOCGame.START1A))
                     {
                         startGame(ga);
                     }
 
-                    /**
-                     * if the request list is empty, remove the empty list
-                     */
+                    // if the request list is empty, remove the empty list
                     if (requests.isEmpty())
                     {
                         robotJoinRequests.remove(ga.getName());
@@ -4347,9 +3905,7 @@ public class SOCServer extends Server
 
                 broadcastGameStats(ga);
 
-                /**
-                 * send all the private information
-                 */
+                // send all the private information
                 SOCResourceSet resources = ga.getPlayer(pn).getResources();
                 messageToPlayer(c, new SOCPlayerElement(ga.getName(), pn, SOCPlayerElement.SET, SOCPlayerElement.CLAY, resources.getAmount(SOCPlayerElement.CLAY)));
                 messageToPlayer(c, new SOCPlayerElement(ga.getName(), pn, SOCPlayerElement.SET, SOCPlayerElement.ORE, resources.getAmount(SOCPlayerElement.ORE)));
@@ -4360,9 +3916,7 @@ public class SOCServer extends Server
 
                 SOCDevCardSet devCards = ga.getPlayer(pn).getDevCards();
 
-                /**
-                 * remove the unknown cards
-                 */
+                // remove the unknown cards
                 int i;
 
                 for (i = 0; i < devCards.getTotal(); i++)
@@ -4496,9 +4050,7 @@ public class SOCServer extends Server
                     messageToPlayer(c, new SOCDevCard(ga.getName(), pn, SOCDevCard.ADDOLD, SOCDevCardConstants.TOW));
                 }
 
-                /**
-                 * send game state info like requests for discards
-                 */
+                // send game state info like requests for discards
                 sendGameState(ga);
 
                 if ((ga.getCurrentDice() == 7) && (ga.getPlayer(pn).getResources().getTotal() > 7))
@@ -4506,9 +4058,7 @@ public class SOCServer extends Server
                     messageToPlayer(c, new SOCDiscardRequest(ga.getName(), ga.getPlayer(pn).getResources().getTotal() / 2));
                 }
 
-                /**
-                 * send what face this player is using
-                 */
+                // send what face this player is using
                 messageToGame(ga.getName(), new SOCChangeFace(ga.getName(), pn, ga.getPlayer(pn).getFaceId()));
             }
             catch (Exception e)
@@ -4518,7 +4068,6 @@ public class SOCServer extends Server
             }
 
             ga.releaseMonitor();
-        }
     }
 
     /**
@@ -4529,11 +4078,10 @@ public class SOCServer extends Server
      * @param pe  the perpetrator
      * @param vi  the the victim
      * @param rsrc  what was stolen
+     * @throws NullPointerExceptioin if ga is null
      */
-    protected void reportRobbery(SOCGame ga, SOCPlayer pe, SOCPlayer vi, int rsrc)
+    private void reportRobbery(SOCGame ga, SOCPlayer pe, SOCPlayer vi, int rsrc)
     {
-        if (ga != null)
-        {
             String mes1 = "You stole ";
             String mes2 = pe.getName() + " stole ";
             SOCPlayerElement gainRsrc = null;
@@ -4609,9 +4157,7 @@ public class SOCServer extends Server
             exceptions.addElement(peCon);
             exceptions.addElement(viCon);
 
-            /**
-             * send the game messages
-             */
+            // send the game messages
             messageToPlayer(peCon, gainRsrc);
             messageToPlayer(peCon, loseRsrc);
             messageToPlayer(viCon, gainRsrc);
@@ -4621,24 +4167,20 @@ public class SOCServer extends Server
             messageToGameExcept(ga.getName(), exceptions, gainUnknown);
             messageToGameExcept(ga.getName(), exceptions, loseUnknown);
 
-            /**
-             * send the text messages
-             */
+            // send the text messages
             messageToPlayer(peCon, new SOCGameTextMsg(ga.getName(), SERVERNAME, mes1));
             messageToPlayer(viCon, new SOCGameTextMsg(ga.getName(), SERVERNAME, mes2));
             messageToGameExcept(ga.getName(), exceptions, new SOCGameTextMsg(ga.getName(), SERVERNAME, pe.getName() + " stole a resource from " + vi.getName()));
-        }
     }
 
     /**
      * send the current state of the game with a message
      *
      * @param ga  the game
+     * @throws NullPointerException if ga is null
      */
-    protected void sendGameState(SOCGame ga)
+    private void sendGameState(SOCGame ga)
     {
-        if (ga != null)
-        {
             messageToGame(ga.getName(), new SOCGameState(ga.getName(), ga.getGameState()));
 
             SOCPlayer player = null;
@@ -4713,9 +4255,7 @@ public class SOCServer extends Server
 
             case SOCGame.WAITING_FOR_CHOICE:
 
-                /**
-                 * get the choices from the game
-                 */
+                // get the choices from the game
                 boolean[] choices = new boolean[SOCGame.MAXPLAYERS];
 
                 for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
@@ -4731,9 +4271,7 @@ public class SOCServer extends Server
                     choices[pl.getPlayerNumber()] = true;
                 }
 
-                /**
-                 * ask the current player to choose a player to steal from
-                 */
+                // ask the current player to choose a player to steal from
                 String n = ga.getPlayer(ga.getCurrentPlayerNumber()).getName();
                 Enumeration connsEnum = getConnections();
 
@@ -4765,9 +4303,7 @@ public class SOCServer extends Server
                         msg = pl.getName() + " has won the game with " + pl.getTotalVP() + " points.";
                         messageToGame(ga.getName(), new SOCGameTextMsg(ga.getName(), SERVERNAME, msg));
 
-                        ///
-                        /// send a message saying what VP cards the player has
-                        ///
+                        // send a message saying what VP cards the player has
                         SOCDevCardSet devCards = pl.getDevCards();
 
                         if (devCards.getNumVPCards() > 0)
@@ -4835,7 +4371,6 @@ public class SOCServer extends Server
 
                 break;
             }
-        }
     }
 
     /**
@@ -4844,11 +4379,10 @@ public class SOCServer extends Server
      * @param ga        the game
      * @param offering  the number of the player making the offer
      * @param accepting the number of the player accepting the offer
+     * @throws NullPointerExceptioin if ga is null
      */
-    protected void reportTrade(SOCGame ga, int offering, int accepting)
+    private void reportTrade(SOCGame ga, int offering, int accepting)
     {
-        if (ga != null)
-        {
             SOCTradeOffer offer = ga.getPlayer(offering).getCurrentOffer();
             String message = ga.getPlayer(offering).getName() + " traded ";
             SOCResourceSet rsrcs;
@@ -4985,7 +4519,6 @@ public class SOCServer extends Server
 
             message += (" from " + ga.getPlayer(accepting).getName() + ".");
             messageToGame(ga.getName(), new SOCGameTextMsg(ga.getName(), SERVERNAME, message));
-        }
     }
 
     /**
@@ -4994,11 +4527,10 @@ public class SOCServer extends Server
      * @param ga        the game
      * @param give      the number of the player making the offer
      * @param get       the number of the player accepting the offer
+     * @throws NullPointerExceptioin if ga is null
      */
-    protected void reportBankTrade(SOCGame ga, SOCResourceSet give, SOCResourceSet get)
+    private void reportBankTrade(SOCGame ga, SOCResourceSet give, SOCResourceSet get)
     {
-        if (ga != null)
-        {
             String message = ga.getPlayer(ga.getCurrentPlayerNumber()).getName() + " traded ";
             int cl;
             int or;
@@ -5130,7 +4662,6 @@ public class SOCServer extends Server
             }
 
             messageToGame(ga.getName(), new SOCGameTextMsg(ga.getName(), SERVERNAME, message));
-        }
     }
 
     /**
@@ -5140,54 +4671,32 @@ public class SOCServer extends Server
      * @param ga the game
      *
      * @return true if it is the player's turn
+     * @throws NullPointerExceptioin if ga or c are null
      */
-    protected boolean checkTurn(Connection c, SOCGame ga)
+    private boolean checkTurn(Connection c, SOCGame ga)
     {
-        if ((c != null) && (ga != null))
-        {
-            try
-            {
-                if (ga.getCurrentPlayerNumber() != ga.getPlayer((String) c.data).getPlayerNumber())
-                {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
-            }
-            catch (Exception e)
-            {
-                return false;
-            }
-        }
-        else
-        {
-            return false;
-        }
+        boolean result = false;
+        SOCPlayer player = ga.getPlayer((String) c.data);
+
+        return (player != null && ga.getCurrentPlayerNumber() == player.getPlayerNumber());
     }
 
     /**
      * do the stuff you need to do to start a game
      *
      * @param ga  the game
+     * @throws NullPointerExceptioin if ga is null
      */
-    protected void startGame(SOCGame ga)
+    private void startGame(SOCGame ga)
     {
-        if (ga != null)
-        {
             numberOfGamesStarted++;
             ga.startGame();
 
-            /**
-             * send the board layout
-             */
+            // send the board layout
             SOCBoardLayout bl = getBoardLayoutMessage(ga);
             messageToGame(ga.getName(), bl);
 
-            /**
-             * send the player info
-             */
+            // send the player info
             for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
             {
                 SOCPlayer pl = ga.getPlayer(i);
@@ -5197,48 +4706,35 @@ public class SOCServer extends Server
                 messageToGame(ga.getName(), new SOCSetPlayedDevCard(ga.getName(), i, false));
             }
 
-            /**
-             * send the number of dev cards
-             */
+            // send the number of dev cards
             messageToGame(ga.getName(), new SOCDevCardCount(ga.getName(), ga.getNumDevCards()));
 
-            /**
-             * ga.startGame() picks who goes first, but feedback is nice
-             */
+            // ga.startGame() picks who goes first, but feedback is nice
             messageToGame(ga.getName(), new SOCGameTextMsg(ga.getName(), SERVERNAME, "Randomly picking a starting player..."));
 
-            /**
-             * send the game state
-             */
+            // send the game state
             sendGameState(ga);
 
-            /**
-             * start the game
-             */
+            // start the game
             messageToGame(ga.getName(), new SOCStartGame(ga.getName()));
 
-            /**
-             * send who's turn it is
-             */
+            // send who's turn it is
             sendTurn(ga);
-        }
     }
 
     /**
      * send who's turn it is
      *
      * @param ga  the game
+     * @throws NullPointerExceptioin if ga is null
      */
     private void sendTurn(SOCGame ga)
     {
-        if (ga != null)
-        {
             messageToGame(ga.getName(), new SOCSetPlayedDevCard(ga.getName(), ga.getCurrentPlayerNumber(), false));
 
             SOCTurn turnMessage = new SOCTurn(ga.getName(), ga.getCurrentPlayerNumber());
             messageToGame(ga.getName(), turnMessage);
             recordGameEvent(ga.getName(), turnMessage.toCmd());
-        }
     }
 
     /**
@@ -5246,6 +4742,7 @@ public class SOCServer extends Server
      *
      * @param  ga   the game
      * @return      a board layout message
+     * @throws NullPointerExceptioin if ga is null
      */
     private SOCBoardLayout getBoardLayoutMessage(SOCGame ga)
     {
@@ -5264,24 +4761,24 @@ public class SOCServer extends Server
 
     /**
      * create a new game event record
-     */
-    private void createNewGameEventRecord()
+    private void createNewGameEventRecord(SOCMessageRecord message)
     {
-        /*
-           currentGameEventRecord = new SOCGameEventRecord();
-           currentGameEventRecord.setTimestamp(new Date());
-         */
+        currentGameEventRecord = new SOCGameEventRecord();
+        currentGameEventRecord.setTimestamp(new Date());
+        currentGameEventRecord.setMessageIn(message);
     }
+     */
 
     /**
      * save the current game event record in the game record
      *
      * @param gn  the name of the game
      */
-    private void saveCurrentGameEventRecord(String gn)
+    private void saveCurrentGameEventRecord(SOCGame game)
     {
         /*
-           SOCGameRecord gr = (SOCGameRecord)gameRecords.get(gn);
+           currentGameEventRecord.setSnapshot(game);
+           SOCGameRecord gr = (SOCGameRecord)gameRecords.get(game);
            SOCGameEventRecord ger = currentGameEventRecord.myClone();
            gr.addEvent(ger);
          */
@@ -5323,11 +4820,10 @@ public class SOCServer extends Server
      * record the scores in the database
      *
      * @param ga  the game
+     * @throws NullPointerExceptioin if ga is null
      */
-    protected void storeGameScores(SOCGame ga)
+    private void storeGameScores(SOCGame ga)
     {
-        if (ga != null)
-        {
             //D.ebugPrintln("allOriginalPlayers for "+ga.getName()+" : "+ga.allOriginalPlayers());
             if ((ga.getGameState() == SOCGame.OVER) && (ga.allOriginalPlayers()))
             {
@@ -5348,7 +4844,6 @@ public class SOCServer extends Server
                     }
                 }
             }
-        }
     }
 
     /**
@@ -5375,6 +4870,7 @@ public class SOCServer extends Server
 
     /**
      * this is a debugging command that gives resources to a player
+     * @throws NullPointerExceptioin if game or mes are null
      */
     protected void giveResources(String mes, SOCGame game)
     {
@@ -5495,9 +4991,8 @@ public class SOCServer extends Server
                     messageToGame(gameName, new SOCGameTextMsg(gameName, SERVERNAME, ">>> The time limit on this game has expired and will now be destroyed."));
                 }
                 else
-                //
+
                 //  Give people a 5 minute warning
-                //
                 if ((gameData.getExpiration() - 300000) <= System.currentTimeMillis())
                 {
                     gameData.setExpiration(System.currentTimeMillis() + 300000);
@@ -5534,7 +5029,9 @@ public class SOCServer extends Server
         }
     }
 
-    /** this is a debugging command that gives a dev card to a player
+    /**
+     * this is a debugging command that gives a dev card to a player
+     * @throws NullPointerExceptioin if game is null
      */
     protected void giveDevCard(String mes, SOCGame game)
     {
