@@ -9,6 +9,7 @@
 - source updated to compile on jdk 5.0 (Dave Brosius)
 - fonts are specified with generic names for better compatibility and
   all changed to SansSerif rather than any monospace fonts (dagolden)
+- fixed vertical size of text input (dagolden)
 
     > 1.0.6 (build 2004-xx-xx)
 

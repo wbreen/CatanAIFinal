@@ -504,7 +504,7 @@ public class SOCPlayerInterface extends Frame
         int hh = (dim.height - 12) / 2;
         int kw = bw;
         int kh = buildingPanel.getSize().height;
-        int tfh = textInput.getSize().height;
+        int tfh = textInput.getPreferredSize().height;
         int tah = dim.height - bh - kh - tfh - 16;
 
         boardPanel.setBounds(i.left + hw + 8, i.top + tfh + tah + 8, SOCBoardPanel.getPanelX(), SOCBoardPanel.getPanelY());
