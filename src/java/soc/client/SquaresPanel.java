@@ -44,7 +44,7 @@ public class SquaresPanel extends Panel
      */
     public SquaresPanel(boolean in)
     {
-        int i;
+        super(null);
 
         interactive = in;
 
@@ -64,13 +64,15 @@ public class SquaresPanel extends Panel
         get[3] = new ColorSquare(ColorSquare.NUMBER, in, ColorSquare.WHEAT);
         get[4] = new ColorSquare(ColorSquare.NUMBER, in, ColorSquare.WOOD);
 
-        for (i = 0; i < 5; i++)
+        for (int i = 0; i < 5; i++)
         {
             add(get[i]);
             add(give[i]);
         }
 
-        setLayout(null);
+        int lineH = ColorSquare.HEIGHT - 1;
+        int sqW = ColorSquare.WIDTH - 1;
+        setSize((5 * sqW) + 1, (2 * lineH) + 1);
     }
 
     /**
@@ -88,13 +90,11 @@ public class SquaresPanel extends Panel
         {
             give[i].setSize(sqW + 1, lineH + 1);
             give[i].setLocation(i * sqW, 0);
-            give[i].draw();
+            //give[i].draw();
             get[i].setSize(sqW + 1, lineH + 1);
             get[i].setLocation(i * sqW, lineH);
-            get[i].draw();
+            //get[i].draw();
         }
-
-        setSize((5 * sqW) + 1, (2 * lineH) + 1);
     }
 
     /**
