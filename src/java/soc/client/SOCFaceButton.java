@@ -25,11 +25,14 @@ import soc.game.SOCPlayer;
 
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
+import java.awt.MediaTracker;
+import java.awt.Toolkit;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
 
 /**
@@ -38,28 +41,66 @@ import java.awt.event.MouseListener;
  *
  * @author Robert S. Thomas
  */
-public class SOCFaceButton extends Canvas implements MouseListener
+public class SOCFaceButton extends Canvas
 {
-    private static String IMAGEDIR = "soc/client/images";
+    public static final int DEFAULT_FACE = 1;
 
+    private static final String IMAGEDIR = "/soc/client/images";
+    
     /**
-     * number of face images
+     * number of /numbered/ face images /plus 1/ for the robot face
      */
     public static final int NUM_FACES = 74;
-    private Image[] images;
-    private int currentImageNum;
+    /** Shared images */
+    private static Image[] images;
+
+    private int currentImageNum = DEFAULT_FACE;
     private int panelx;
     private int panely;
+    private int pNumber;
     private SOCGame game;
-    private SOCPlayer player;
     private SOCPlayerClient client;
-    private Color pColor;
 
     /**
      * offscreen buffer
      */
     private Image buffer;
 
+    private static synchronized void loadImages(Component c)
+    {
+        if (images == null)
+        {
+            MediaTracker tracker = new MediaTracker(c);
+            Toolkit tk = c.getToolkit();
+            Class clazz = c.getClass();
+        
+            images = new Image[NUM_FACES];
+
+            /**
+             * load the images
+             */
+            images[0] = tk.getImage(clazz.getResource(IMAGEDIR + "/robot.gif"));
+            tracker.addImage(images[0], 0);
+            
+            for (int i = 1; i < NUM_FACES; i++)
+            {
+                images[i] = tk.getImage(clazz.getResource(IMAGEDIR + "/face" + i + ".gif"));
+                tracker.addImage(images[i], 0);
+            }
+
+            try
+            {
+                tracker.waitForID(0);
+            }
+            catch (InterruptedException e) {}
+
+            if (tracker.isErrorID(0))
+            {
+                System.out.println("Error loading Face images");
+            }
+        }
+    }
+    
     /**
      * create a new SOCFaceButton
      *
@@ -72,44 +113,17 @@ public class SOCFaceButton extends Canvas implements MouseListener
 
         client = pi.getClient();
         game = pi.getGame();
-        player = game.getPlayer(pn);
-        pColor = pi.getPlayerColor(pn);
+        pNumber = pn;
 
-        setBackground(pColor);
+        setBackground(pi.getPlayerColor(pn));
 
         panelx = 40;
         panely = 40;
 
-        images = new Image[NUM_FACES + 1];
+        // load the static images
+        loadImages(this);
 
-        currentImageNum = 1;
-
-        /**
-         * set up the mouse listeners
-         */
-        /**
-         * load the images
-         */
-        if (client.isStandalone())
-        {
-            images[0] = getToolkit().getImage(IMAGEDIR + "/robot.gif");
-
-            for (int i = 1; i <= NUM_FACES; i++)
-            {
-                images[i] = getToolkit().getImage(IMAGEDIR + "/face" + i + ".gif");
-            }
-        }
-        else
-        {
-            images[0] = client.getImage(client.getCodeBase(), IMAGEDIR + "/robot.gif");
-
-            for (int i = 1; i <= NUM_FACES; i++)
-            {
-                images[i] = client.getImage(client.getCodeBase(), IMAGEDIR + "/face" + i + ".gif");
-            }
-        }
-
-        this.addMouseListener(this);
+        this.addMouseListener(new MyMouseAdapter());
     }
 
     /**
@@ -120,20 +134,15 @@ public class SOCFaceButton extends Canvas implements MouseListener
     public void setFace(int id)
     {
         currentImageNum = id;
-        forceRedraw();
+        repaint();
     }
 
     /**
-     * Needed because it's a component
+     * Reset to the default face.
      */
-    public void addNotify()
+    public void setDefaultFace()
     {
-        super.addNotify();
-
-        if (buffer == null)
-        {
-            buffer = this.createImage(panelx, panely);
-        }
+        setFace(DEFAULT_FACE);
     }
 
     /**
@@ -157,130 +166,74 @@ public class SOCFaceButton extends Canvas implements MouseListener
     }
 
     /**
-     * DOCUMENT ME!
-     *
-     * @param g DOCUMENT ME!
+     * Redraw the board using double buffering. Don't call this directly, use
+     * {@link Component#repaint()} instead.
      */
     public void paint(Graphics g)
     {
+        if (buffer == null)
+        {
+            buffer = this.createImage(panelx, panely);
+        }
+        drawFace(buffer.getGraphics());
+        buffer.flush();
         g.drawImage(buffer, 0, 0, this);
     }
 
     /**
-     * DOCUMENT ME!
-     *
-     * @param g DOCUMENT ME!
+     * Overriden so the peer isn't painted, which clears background. Don't call
+     * this directly, use {@link Component#repaint()} instead.
      */
     public void update(Graphics g)
     {
-        draw();
         paint(g);
-    }
-
-    /**
-     * draw method
-     */
-    public final void draw()
-    {
-        drawFace(buffer.getGraphics());
-    }
-
-    /**
-     * force a redraw
-     */
-    public final void forceRedraw()
-    {
-        drawFace(buffer.getGraphics());
-        buffer.flush();
-        paint(this.getGraphics());
     }
 
     /**
      * draw the face
      */
-    public void drawFace(Graphics g)
+    private void drawFace(Graphics g)
     {
-        g.clearRect(0, 0, panelx, panely);
-        g.drawImage(images[currentImageNum], 0, 0, pColor, this);
+        g.clearRect(0, 0, WIDTH, HEIGHT);
+        g.drawImage(images[currentImageNum], 0, 0, getBackground(), this);
     }
 
     /*********************************
      * Handle Events
      *********************************/
-    public void mouseClicked(MouseEvent e)
+    private class MyMouseAdapter extends MouseAdapter
     {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param e DOCUMENT ME!
-     */
-    public void mouseEntered(MouseEvent e)
-    {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param e DOCUMENT ME!
-     */
-    public void mouseExited(MouseEvent e)
-    {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param e DOCUMENT ME!
-     */
-    public void mouseReleased(MouseEvent e)
-    {
-        ;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param evt DOCUMENT ME!
-     */
-    public void mousePressed(MouseEvent evt)
-    {
-        /**
-         * only change the face if it's the owners button
-         */
-        if (player.getName().equals(client.getNickname()))
+        public void mousePressed(MouseEvent evt)
         {
-            if (evt.getX() < 20)
+            /**
+             * only change the face if it's the owners button
+             */
+            if (game.getPlayer(pNumber).getName().equals(client.getNickname()))
             {
-                /**
-                 * if the click is on the left side, decrease the number
-                 */
-                currentImageNum--;
-
-                if (currentImageNum <= 0)
+                if (evt.getX() < 20)
                 {
-                    currentImageNum = NUM_FACES - 1;
+                    // if the click is on the left side, decrease the number
+                    currentImageNum--;
+                    
+                    if (currentImageNum <= 0)
+                    {
+                        currentImageNum = NUM_FACES - 1;
+                    }
                 }
-            }
-            else
-            {
-                /**
-                 * if the click is on the right side, increase the number
-                 */
-                currentImageNum++;
-
-                if (currentImageNum == NUM_FACES)
+                else
                 {
-                    currentImageNum = 1;
-                }
-            }
+                    // if the click is on the right side, increase the number
+                    currentImageNum++;
 
-            client.changeFace(game, currentImageNum);
-            forceRedraw();
+                    if (currentImageNum == NUM_FACES)
+                    {
+                        currentImageNum = 1;
+                    }
+                }
+                
+                client.changeFace(game, currentImageNum);
+                repaint();
+            }
         }
     }
 }
