@@ -810,7 +810,7 @@ public class SOCDBHelper
     /**
      * Common behavior for SQL Exceptions.
      */
-    private static void handleSQLException(SQLException x) throws SQLException
+    protected static void handleSQLException(SQLException x) throws SQLException
     {
         errorCondition = true;
         x.printStackTrace();
