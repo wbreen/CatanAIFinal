@@ -206,9 +206,13 @@
           <include name="sql/*.sql" />
         </fileset>
       </copy>
-      <copy todir="${target}">
+      <copy todir="${target}" preservelastmodified="true">
         <fileset dir="${web.src}" includes="*.html" />
-        <fileset dir="${props.src}" includes="*.properties*" />
+        <fileset dir="${props.src}" includes="*.properties.default" />
+      </copy>
+      <copy todir="${target}" preservelastmodified="true">
+        <fileset dir="${props.src}" includes="*.default" />
+        <mapper type="glob" from="*.default" to="*" />
       </copy>
   </target>
 
@@ -300,7 +304,7 @@
         <fileset dir="${target}" includes="*.properties.default" />
         <mapper type="glob" from="*.default" to="*"/>
       </copy>
-      <copy todir="${dist.tmp}/web">
+      <copy todir="${dist.tmp}/web" preservelastmodified="true">
         <fileset dir="${web.src}" />
       </copy>
 
