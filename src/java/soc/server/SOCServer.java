@@ -234,6 +234,7 @@ public class SOCServer extends Server
         System.err.println("Java Settlers Server " + Version.version() +
                            ", " + Version.copyright());
         System.err.println("Network layer based on code by Cristian Bogdan.");
+        System.err.println("Listening on port "+p);
 
         try
         {
