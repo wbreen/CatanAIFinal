@@ -309,7 +309,7 @@ public class TradeOfferPanel extends Panel
                         if (names2 == null)
                         {
                             names1 += ",";
-                            names2 = new String(name);
+                            names2 = name;
                         }
                         else
                         {

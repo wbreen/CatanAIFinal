@@ -178,7 +178,7 @@ public class SOCBuildingPanel extends Panel implements ActionListener
         FontMetrics fm = this.getFontMetrics(this.getFont());
         int lineH = ColorSquare.HEIGHT;
         int rowSpaceH = (dim.height - (8 * lineH)) / 3;
-        int costW = fm.stringWidth(new String("Cost: "));
+        int costW = fm.stringWidth("Cost: ");
         int butW = 50;
         int margin = 2;
 
