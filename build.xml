@@ -200,6 +200,7 @@
       <copy todir="${bin.target}" preservelastmodified="true">
         <fileset dir="${bin.src}">
           <include name="jsettlers*" />
+          <include name="sql/*.sql" />
         </fileset>
       </copy>
       <copy todir="${target}">
