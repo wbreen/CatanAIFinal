@@ -3,13 +3,18 @@
     > 1.1 (build 2004-xx-xx)
 
 - jsettlers[.bat] and jsettlersd[.bat] scripts added for easier command
-  line startup
+  line startup (mchenryc)
 - fixed [bug 950989] which caused chat windows to wrap oddly, and
-  removed extra blank always at bottom of chat text
+  removed extra blank always at bottom of chat text (mchenryc)
 - source updated to compile on jdk 5.0 (Dave Brosius)
 - fonts are specified with generic names for better compatibility and
   all changed to SansSerif rather than any monospace fonts (dagolden)
 - fixed vertical size of text input (dagolden)
+- accept button disabled when for trade offers a player does not have
+  resources for (drichardson)
+- several code cleanup issues (dbrosius)
+- database initialization commands in separate file (mchenryc)
+- user database now stores wins losses and face choice. (jtwilley)
 
     > 1.0.6 (build 2004-11-17)
 
@@ -18,9 +23,9 @@
   commands (*STOP*, *KILLCHANNEL*, etc) (Lasse Vartiainen)
 - Fixed 920375, 1022157: mysql-connector-3.x fails: version 2.x works
   (Mezryn)
-- Fixed 1060651: Bots crash if database backend is used (Jack Twilley)
+- Fixed 1060651: Bots crash if database backend is used (jtwilley)
 - Moved more SQL error handling and reconnecting from SOCServer to
-  SOCDBHelper correcting potential errors like 1060651
+  SOCDBHelper correcting potential errors like 1060651 (mchenryc)
 
     > 1.0.5 (build 2004-06-12)
 
