@@ -618,7 +618,6 @@ public class SOCAccountClient extends Applet implements Runnable, ActionListener
         Applet ex1 = new SOCAccountClient(args[0], Integer.parseInt(args[1]), true);
         ex1.init();
         f.add("Center", ex1);
-        f.pack();
         f.setSize(600, 500);
         f.show();
     }
