@@ -213,9 +213,9 @@ different database (default=socdata) or user/password
 
 To create the tables in a mysql database, and a user for the server to
 connect and access the data, execute the script
-${JSETTLERS_HOME}/bin/sql/jsettlers-init.mysql
+${JSETTLERS_HOME}/bin/sql/jsettlers-init.sql
 
-  $ mysql -u root -p -e "SOURCE bin/sql/jsettlers-init.mysql"
+  $ mysql -u root -p -e "SOURCE bin/sql/jsettlers-init.sql"
 
 This will connect as root, prompt for the root password, create the
 'socdata' database, create a 'socuser' user with the password
