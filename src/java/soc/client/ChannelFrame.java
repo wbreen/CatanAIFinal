@@ -20,7 +20,12 @@
  **/
 package soc.client;
 
+import soc.disableDebug.D;
+
+import java.awt.AWTEvent;
 import java.awt.Canvas;
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Event;
 import java.awt.Font;
@@ -28,6 +33,17 @@ import java.awt.Frame;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.TextField;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -59,16 +75,16 @@ public class ChannelFrame extends Frame
         setForeground(ccp.getForeground());
 
         ta = new SnippingTextArea("", 100);
-        tf = new TextField();
+        tf = new TextField("Please wait...");
         lst = new java.awt.List(0, false);
         cc = ccp;
         cname = t;
         ta.setEditable(false);
         tf.setEditable(false);
-        tf.setText("Please wait...");
         cnvs = new Canvas();
-        cnvs.resize(5, 200);
-        lst.resize(180, 200);
+        cnvs.setBackground(Color.lightGray);
+        cnvs.setSize(5, 200);
+        lst.setSize(180, 200);
         setFont(new Font("Helvetica", Font.PLAIN, 12));
         add(ta);
         add(cnvs);
@@ -77,9 +93,14 @@ public class ChannelFrame extends Frame
 
         setLayout(null);
 
-        resize(650, 340);
-        move(200, 200);
+        setSize(640, 480);
+        setLocation(200, 200);
         history.addElement("");
+
+        tf.addActionListener(new InputActionListener());
+        tf.addKeyListener(new InputKeyListener());
+        cnvs.addMouseListener(new DividerMouseListener());
+        addWindowListener(new MyWindowListener());
     }
 
     /** add some text*/
@@ -131,123 +152,119 @@ public class ChannelFrame extends Frame
     /** add a member to the group */
     public void addMember(String s)
     {
-        int i;
-
-        for (i = lst.countItems() - 1; i >= 0; i--)
+        synchronized(lst.getTreeLock())
         {
-            if (lst.getItem(i).compareTo(s) < 0)
+            int i;
+            
+            for (i = lst.getItemCount() - 1; i >= 0; i--)
             {
-                break;
+                if (lst.getItem(i).compareTo(s) < 0)
+                {
+                    break;
+                }
             }
-        }
 
-        lst.addItem(s, i + 1);
+            lst.add(s, i + 1);
+        }
     }
 
     /** delete a member from the channel */
     public void deleteMember(String s)
     {
-        int i;
-
-        for (i = lst.countItems() - 1; i >= 0; i--)
+        synchronized(lst.getTreeLock())
         {
-            if (lst.getItem(i).equals(s))
+            for (int i = lst.getItemCount() - 1; i >= 0; i--)
             {
-                lst.delItem(i);
-
-                break;
+                if (lst.getItem(i).equals(s))
+                {
+                    lst.remove(i);
+                    
+                    break;
+                }
             }
         }
     }
 
-    /** send the message that was just typed in, or start editing a private message */
-    public boolean action(Event e, Object o)
+    /** send the message that was just typed in, or start editing a private
+     * message */
+    private class InputActionListener implements ActionListener
     {
-        if (e.target == tf)
+        public void actionPerformed(ActionEvent e)
         {
             String s = tf.getText().trim();
 
-            if (s.length() == 0)
+            if (s.length() > 0)
             {
-                return super.action(e, o);
+                tf.setText("");
+                cc.chSend(cname, s + "\n");
+
+                history.setElementAt(s, history.size() - 1);
+                history.addElement("");
+                historyCounter = 1;
             }
-
-            tf.setText("");
-            cc.chSend(cname, s + "\n");
-
-            history.setElementAt(s, history.size() - 1);
-            history.addElement("");
-            historyCounter = 1;
-
-            return true;
         }
-
-        /*
-           if(e.target==lst)
-             {
-               cc.select(cname, (String)o);
-               return super.action(e,o);
-             }
-         */
-        return super.action(e, o);
     }
 
-    /** when the window is destroyed, tell the applet to leave the group */
-    public boolean handleEvent(Event e)
+    private class DividerMouseListener extends MouseAdapter
     {
-        if ((e.id == Event.MOUSE_ENTER) && (e.target == cnvs) && !down)
+        public void mouseEntered(MouseEvent e)
         {
-            setCursor(W_RESIZE_CURSOR);
-
-            return false;
+            if (!down)
+            {
+                setCursor(Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR));
+            }
         }
-
-        if ((e.id == Event.MOUSE_EXIT) && (e.target == cnvs) && !down)
+        public void mouseExited(MouseEvent e)
         {
-            setCursor(DEFAULT_CURSOR);
-
-            return false;
+            if (!down)
+            {
+                setCursor(Cursor.getDefaultCursor());
+            }
         }
-
-        if ((e.id == Event.MOUSE_DOWN) && (e.target == cnvs))
+        public void mousePressed(MouseEvent e)
         {
             down = true;
-
-            return false;
         }
-
-        if ((e.id == Event.MOUSE_UP) && (e.target == cnvs))
+        public void mouseReleased(MouseEvent e)
         {
-            setCursor(DEFAULT_CURSOR);
+            if (! cnvs.contains(e.getPoint()))
+            {
+                setCursor(Cursor.getDefaultCursor());
+            }
 
-            Dimension d = ta.size();
-            int diff = e.x - 5 - d.width;
+            Dimension d = ta.getSize();
+            Point p = cnvs.getLocation();
+            // e.getX() is in cnvs coords, and make sure nothing dissappears
+            int diff = (p.x + e.getX() - 7) - d.width;
+            diff = Math.max(diff, 30 - d.width);
+            diff = Math.min(diff, (getSize().width - 30) - d.width);
             d.width += diff;
-            ta.resize(d);
+            ta.setSize(d);
             ncols = (int) ((((float) d.width) * 100.0) / ((float) npix)) - 2;
 
-            d = lst.size();
+            d = lst.getSize();
             d.width -= diff;
-            lst.resize(d);
+            lst.setSize(d);
 
-            Point p = cnvs.location();
             p.x += diff;
-            cnvs.move(p.x, p.y);
+            cnvs.setLocation(p);
 
-            p = lst.location();
+            p = lst.getLocation();
             p.x += diff;
-            lst.move(p.x, p.y);
+            lst.setLocation(p);
 
             down = false;
-
-            return false;
         }
+    }
 
-        int hs = history.size();
-
-        if ((e.id == Event.KEY_ACTION) && (e.target == tf))
+    private class InputKeyListener extends KeyAdapter
+    {
+        public void keyPressed(KeyEvent e)
         {
-            if ((e.key == Event.UP) && (hs > historyCounter))
+            int hs = history.size();
+            int key = e.getKeyCode();
+
+            if ((key == KeyEvent.VK_UP) && (hs > historyCounter))
             {
                 if (historyCounter == 1)
                 {
@@ -257,66 +274,58 @@ public class ChannelFrame extends Frame
                 historyCounter++;
                 tf.setText((String) history.elementAt(hs - historyCounter));
             }
-            else if ((e.key == Event.DOWN) && (historyCounter > 1))
+            else if ((key == KeyEvent.VK_DOWN) && (historyCounter > 1))
             {
                 historyCounter--;
                 tf.setText((String) history.elementAt(hs - historyCounter));
             }
-            else
-            {
-                ;
-            }
         }
-        else if (e.id == Event.WINDOW_DESTROY)
+    }
+
+    /** when the window is destroyed, tell the applet to leave the group */
+    private class MyWindowListener extends WindowAdapter
+    {
+        public void windowClosing(WindowEvent e)
         {
             cc.leaveChannel(cname);
             dispose();
         }
-
-        return super.handleEvent(e);
+        public void windowOpened(WindowEvent e)
+        {
+            tf.requestFocus();
+        }
     }
-
+    
     /**
      * DOCUMENT ME!
      */
-    public void layout()
+    public void doLayout()
     {
-        Insets i = insets();
-        Dimension dim = size();
+        Insets i = getInsets();
+        Dimension dim = getSize();
         dim.width -= (i.left + i.right);
         dim.height -= (i.top + i.bottom);
 
-        int h = dim.height - 30;
-        int lw = lst.size().width;
-        int cw = cnvs.size().width;
+        int tfheight = tf.getPreferredSize().height;
+
+        int h = dim.height - tfheight;
+        int lw = lst.getSize().width;
+        int cw = cnvs.getSize().width;
         int w = dim.width - lw - cw;
 
-        tf.resize(dim.width, 30);
-        tf.move(i.left, i.top + h);
+        tf.setSize(dim.width, tfheight);
+        tf.setLocation(i.left, i.top + h);
 
-        ta.resize(w, h);
-        ta.move(i.left, i.top);
+        ta.setSize(w, h);
+        ta.setLocation(i.left, i.top);
 
-        cnvs.resize(cw, h);
-        cnvs.move(i.left + w, i.top);
+        cnvs.setSize(cw, h);
+        cnvs.setLocation(i.left + w, i.top);
 
-        lst.resize(lw, h);
-        lst.move(w + cw + i.left, i.top);
+        lst.setSize(lw, h);
+        lst.setLocation(w + cw + i.left, i.top);
 
+        npix = ta.getPreferredSize(100, 100).width;
         ncols = (int) ((((float) w) * 100.0) / ((float) npix)) - 2;
-    }
-
-    /**
-     * DOCUMENT ME!
-     */
-    public void init()
-    {
-        pack();
-        resize(640, 480);
-        show();
-        npix = ta.preferredSize(100, 100).width;
-        ncols = (int) ((((float) ta.size().width) * 100.0) / ((float) npix)) - 2;
-        lst.resize(npix / 4, lst.size().height);
-        layout();
     }
 }
