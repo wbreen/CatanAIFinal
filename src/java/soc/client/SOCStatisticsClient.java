@@ -356,7 +356,7 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
         setLayout(cardLayout);
 
         add(messagePane, MESSAGE_PANEL); // shown first
-        add(mainPane, MAIN_PANEL);        
+        add(mainPane, MAIN_PANEL);
     }
 
     /**
@@ -451,11 +451,6 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
         }
 
         connect();
-        
-        // Request statistics data
-        put(SOCGetStatistics.toCmd("human"));
-        put(SOCGetStatistics.toCmd("robot"));
-        
     }
 
     /**
@@ -489,6 +484,10 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
             System.err.println(msg);
             messageLabel.setText(msg);
         }
+        
+        // Request statistics data
+        put(SOCGetStatistics.toCmd("human"));
+        put(SOCGetStatistics.toCmd("robot"));
     }
 
     /**
@@ -499,7 +498,7 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
         int cols = statsArray[0].length;
         int rows = statsArray.length;
         Object[] rowData = new Object[cols];
-        
+
         if (type.equals("human"))
         {
             // Transfer data from the statsArray to humanStatsTable
@@ -787,7 +786,7 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
     /**
      * for stand-alones
      **/
-    public void main(String[] args)
+    public static void main(String[] args)
     {
         SOCStatisticsClient client = new SOCStatisticsClient();
         
