@@ -29,7 +29,7 @@ CREATE TABLE logins (
         nickname      VARCHAR(20), 
         host          VARCHAR(50), 
         lastlogin     DATE,
-        PRIMARY KEY (nickname)
+        INDEX (nickname)
 );
 
 CREATE TABLE games (
