@@ -407,6 +407,9 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
 
         add(messagePane, MESSAGE_PANEL); // shown first
         add(mainPane, MAIN_PANEL);
+
+        messageLabel.setText("Waiting to connect.");
+        validate();
     }
 
     /**
@@ -493,11 +496,27 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         catch (Exception exc) {}
 
         initVisualElements(); // after the background is set
+        
+        connect();
+    }
 
-        System.out.println("Connecting to "+(host!=null?host:"localhost")+":"+port);
+    /**
+     * Attempts to connect to the server. See {@link #connected} for success or
+     * failure.
+     * @throws IllegalStateException if already connected 
+     */
+    public synchronized void connect()
+    {
+        String hostString = (host != null ? host : "localhost") + ":" + port;
+        if (connected)
+        {
+            throw new IllegalStateException("Already connected to " +
+                                            hostString);
+        }
+                
+        System.out.println("Connecting to " + hostString);
         messageLabel.setText("Connecting to server...");
-        validate();
-
+        
         try
         {
             s = new Socket(host, port);
@@ -3320,26 +3339,46 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
     /**
      * for stand-alones
      */
+    public static void usage()
+    {
+        System.err.println("usage: java soc.client.SOCPlayerClient <host> <port>");
+    }
+
+    /**
+     * for stand-alones
+     */
     public static void main(String[] args)
     {
-        if (args.length < 2)
+        SOCPlayerClient client = new SOCPlayerClient();
+        
+        if (args.length != 2)
         {
-            System.err.println("usage: java soc.client.SOCPlayerClient <host> <port>");
-            return;
+            usage();
+            System.exit(1);
         }
 
-        Frame f = new Frame("SOCPlayerClient");
-        SOCPlayerClient ex1 = new SOCPlayerClient(args[0], Integer.parseInt(args[1]));
+        try {
+            client.host = args[0];
+            client.port = Integer.parseInt(args[1]);
+        } catch (NumberFormatException x) {
+            usage();
+            System.err.println("Invalid port: " + args[1]);
+            System.exit(1);
+        }
 
+        Frame frame = new Frame("SOCPlayerClient");
+        frame.setBackground(new Color(Integer.parseInt("61AF71",16)));
+        frame.setForeground(Color.black);
         // Add a listener for the close event
-        f.addWindowListener(ex1.createWindowAdapter());
+        frame.addWindowListener(client.createWindowAdapter());
         
-        ex1.setBackground(new Color(Integer.parseInt("61AF71",16)));
-        ex1.setForeground(Color.black);
-        ex1.init();
-        f.add("Center", ex1);
-        f.setSize(620, 400);
-        f.setVisible(true);
+        client.initVisualElements(); // after the background is set
+        
+        frame.add(client, BorderLayout.CENTER);
+        frame.setSize(620, 400);
+        frame.setVisible(true);
+
+        client.connect();
     }
 
     private WindowAdapter createWindowAdapter()
