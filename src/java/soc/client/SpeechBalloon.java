@@ -34,6 +34,7 @@ import java.awt.Polygon;
  */
 public class SpeechBalloon extends Canvas
 {
+    private static Color balloonColor = new Color(255, 230, 162);
     int height;
     int width;
 
@@ -84,16 +85,13 @@ public class SpeechBalloon extends Canvas
         int xm = 5;
         int ym = 5;
         Polygon balloon;
-        int[] xPoints = 
-        {
-            0, w / 8, w / 8, ((w / 8) + (w / 16)), w - xm, w - xm, 0, 0
-        };
+        int[] xPoints = { 0, w / 8, w / 8, ((w / 8) + (w / 16)), w - xm, w - xm, 0, 0 };
         int[] yPoints = { h / 8, h / 8, 0, h / 8, h / 8, h - ym, h - ym, h / 8 };
         int i;
 
         balloon = new Polygon(xPoints, yPoints, 8);
         g.setPaintMode();
-        g.setColor(new Color(255, 230, 162));
+        g.setColor(balloonColor);
         g.fillPolygon(balloon);
         g.setColor(Color.black);
         g.drawPolygon(balloon);
@@ -107,29 +105,5 @@ public class SpeechBalloon extends Canvas
         {
             g.drawLine(w - i, (h / 6) + xm, w - i, h);
         }
-    }
-
-    /**
-     * DOCUMENT ME!
-     */
-    public void draw()
-    {
-        paint(this.getGraphics());
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param g DOCUMENT ME!
-     */
-    public void update(Graphics g)
-    {
-        paint(g);
-    }
-
-    // Needed because it's a component
-    public void addNotify()
-    {
-        super.addNotify();
     }
 }
