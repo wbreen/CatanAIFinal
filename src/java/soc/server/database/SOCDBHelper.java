@@ -240,6 +240,62 @@ public class SOCDBHelper
     }
 
     /**
+     * Authenticate a user with the specified password. If authentication is
+     * successful, the users lastlogin is updated and Auth.PASS is returned. If
+     * the username is unknown, or the database is inaccessable,
+     * Auth.UNKNOWN, and finally Auth.FAIL for an incorrect password.
+     *
+     * @param userName name of player
+     * @param password password of player
+     *
+     * @return <code>Auth.PASS</code>, <code>Auth.FAIL</code>, or
+     * <code>Auth.UNKNOWN</code>
+     * @throws SQLException on db error
+     * @throws NullPointerException if either parameter is null
+     */
+    public static Auth authenticate(String userName, String password, String host) throws SQLException
+    {
+        Auth result = Auth.UNKNOWN;
+        
+        // ensure that the JDBC connection is still valid
+        if (checkConnection())
+        {
+            try
+            {
+                // fill in the data values to the Prepared statement
+                userPasswordQuery.setString(1, userName);
+
+                // execute the Query
+                ResultSet resultSet = userPasswordQuery.executeQuery();
+
+                // if no results, user is not authenticated
+                if (resultSet.next())
+                {
+                    String dbPass = resultSet.getString(1);
+                    if (password != null && password.equals(dbPass))
+                    {
+                        recordLogin(userName, host, System.currentTimeMillis());
+                        result = Auth.PASS;
+                    }
+                    else
+                    {
+                        result = Auth.FAIL;
+                    }
+                }
+
+                resultSet.close();
+            }
+            catch (SQLException sqlE)
+            {
+                handleSQLException(sqlE);
+            }
+        }
+
+        return result;
+    }
+    
+
+    /**
      * returns default face for player
      *
      * @param sUserName username of player
@@ -672,13 +728,6 @@ public class SOCDBHelper
                     rows.add(rowData);
                 }
                 resultSet.close();
-
-                if (rows.isEmpty() )
-                {
-                    String[] rowData = new String[STAT_COLUMNS];
-                    rowData[0] = "None";
-                    rows.add(rowData);
-                }
                 
                 // Create the array of statistics to return
                 statistics = new String[rows.size()][];
@@ -851,4 +900,25 @@ public class SOCDBHelper
         }
     }
     */
+
+    /**
+     * Constant results for authorization requests.
+     */
+    public static class Auth
+    {
+        public static final Auth PASS = new Auth("PASS");
+        public static final Auth FAIL = new Auth("FAIL");
+        public static final Auth UNKNOWN = new Auth("UNKNOWN");
+
+        private String type;
+        /** time to switch to java1.5 code for enums? */
+        private Auth(String type)
+        {
+            this.type = type;
+        }
+        public String toString()
+        {
+            return type;
+        }
+    }
 }
