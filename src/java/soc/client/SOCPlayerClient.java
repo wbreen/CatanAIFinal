@@ -1222,7 +1222,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
     {
         ChannelFrame fr;
         fr = (ChannelFrame) channels.get(mes.getChannel());
-        fr.print("*** " + mes.getNickname() + " has joined this channel.\n");
+        fr.print("*** " + mes.getNickname() + " has joined this channel.");
         fr.addMember(mes.getNickname());
     }
 
@@ -1327,7 +1327,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
     {
         ChannelFrame fr;
         fr = (ChannelFrame) channels.get(mes.getChannel());
-        fr.print("*** " + mes.getNickname() + " left.\n");
+        fr.print("*** " + mes.getNickname() + " left.");
         fr.deleteMember(mes.getNickname());
     }
 
@@ -1383,7 +1383,7 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
     protected void handleJOINGAME(SOCJoinGame mes)
     {
         SOCPlayerInterface pi = (SOCPlayerInterface) playerInterfaces.get(mes.getGame());
-        pi.print("*** " + mes.getNickname() + " has joined this game.\n");
+        pi.print("*** " + mes.getNickname() + " has joined this game.");
     }
 
     /**
