@@ -40,6 +40,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -54,9 +55,28 @@ import java.util.Vector;
  */
 public class SOCServer extends Server
 {
-    /**
-     * Name used when sending messages from the server.
-     */
+    /** Default port server listens on. */
+    public static final int DEFAULT_PORT = 8880;
+    
+    /** Default maximum number of connections allowed. */
+    public static final int DEFAULT_CONNECTIONS = 10;
+    
+    /** Default thread priority. */
+    public static final int DEFAULT_NICE = 5;
+    
+    /** Property to specify the port the server listens on. */
+    public static final String JSETTLERS_PORT = "jsettlers.port";
+
+    /** Property to specify the maximum number of connections allowed. */
+    public static final String JSETTLERS_CONNECTIONS = "jsettlers.connections";
+
+    /** Property to turn on debug mode. */
+    public static final String JSETTLERS_DEBUG = "jsettlers.debug";
+
+    /** Property to specify the server thread priority. */
+    public static final String JSETTLERS_NICE = "jsettlers.nice";
+
+    /** Name used when sending messages from the server. */
     public static final String SERVERNAME = "Server";
 
     /**
@@ -67,7 +87,7 @@ public class SOCServer extends Server
     /**
      * Maximum number of connections allowed
      */
-    private int maxConnections;
+    private int maxConnections = DEFAULT_CONNECTIONS;
 
     /**
      * A list of robots connected to this server
@@ -135,30 +155,65 @@ public class SOCServer extends Server
      * game timeout checker
      */
     private SOCGameTimeoutChecker gameTimeoutChecker;
-    private String databaseUserName;
-    private String databasePassword;
+
+    /**
+     * Properties for the server.
+     */
+    private Properties props = null;
+
 
     /**
      * Create a Settlers of Catan server listening on port p.
      *
-     * @param p    the port that the server listens on
-     * @param mc   the maximum number of connections allowed
-     * @param databaseUserName  the user name for accessing the database
-     * @param databasePassword  the password for the user
+     * @param port Port server listens on
+     * @param props Java properties loaded from file or created
+     *        programatically. May be null
      */
-    public SOCServer(int p, int mc, String databaseUserName, String databasePassword)
+    public SOCServer(int port, Properties props)
     {
-        super(p);
-        maxConnections = mc;
+        super(port);
+        this.props = (props != null ? props : new Properties());
 
-        System.err.println("Java Settlers Server " + Version.version() +
-                           ", " + Version.copyright());
-        System.err.println("Network layer based on code by Cristian Bogdan.");
-        System.err.println("Listening on port "+p);
+        System.err.println(getVersion());
+
+        if (! Version.isJREValid())
+        {
+            String msg = "Incompatable Java version: " +
+                System.getProperty("java.vm.version") + ". Java " +
+                Version.minJREVersion() + " required.";
+            throw new RuntimeException(msg);
+        }
+
+        System.err.println("Listening on port "+port);
+
+        // Max number of connections
+        String connsVal = props.getProperty(JSETTLERS_CONNECTIONS);
+        int conns = DEFAULT_CONNECTIONS;
+        try
+        {
+            conns = (connsVal == null ? conns : Integer.parseInt(connsVal));
+        }
+        catch (NumberFormatException x)  // complain only
+        {
+            System.err.println("Invalid max connection specification: "+connsVal);
+        }
+        maxConnections = conns;
+        
+        // Server thread priority
+        String niceVal = props.getProperty(JSETTLERS_NICE);
+        int nice = DEFAULT_NICE;
+        try
+        {
+            nice = (niceVal == null ? nice : Integer.parseInt(niceVal));
+        }
+        catch (NumberFormatException x) { // complain only
+            System.err.println("Invalid thread priority (niceness): "+niceVal);
+        }
+        setPriority(nice);
 
         try
         {
-            SOCDBHelper.initialize(databaseUserName, databasePassword);
+            SOCDBHelper.initialize(props);
             System.err.println("User database initialized.");
         }
         catch (SQLException x) // just a warning
@@ -171,15 +226,16 @@ public class SOCServer extends Server
         }
 
         startTime = System.currentTimeMillis();
-        numberOfGamesStarted = 0;
-        numberOfGamesFinished = 0;
-        numberOfUsers = 0;
         serverRobotPinger = new SOCServerRobotPinger(robots);
         serverRobotPinger.start();
         gameTimeoutChecker = new SOCGameTimeoutChecker(this);
         gameTimeoutChecker.start();
-        this.databaseUserName = databaseUserName;
-        this.databasePassword = databasePassword;
+    }
+
+    /** Get the version number string. */
+    public static String getVersion()
+    {
+        return "Java Settlers Server " + Version.version();
     }
 
     /**
@@ -5182,36 +5238,11 @@ public class SOCServer extends Server
     }
 
     /**
-     * Starting the server from the command line
-     *
-     * @param args  arguments: port number
+     * Do not use this class to start the server from the command line.
+     * @deprecated Use the Main class instead.
      */
     static public void main(String[] args)
     {
-        int port;
-        int mc;
-
-        if (args.length < 4)
-        {
-            System.err.println("usage: java soc.server.SOCServer port_number max_connections dbUser dbPass");
-
-            return;
-        }
-
-        try
-        {
-            port = Integer.parseInt(args[0]);
-            mc = Integer.parseInt(args[1]);
-        }
-        catch (Exception e)
-        {
-            System.err.println("usage: java soc.server.SOCServer port_number max_connections dbUser dbPass");
-
-            return;
-        }
-
-        SOCServer server = new SOCServer(port, mc, args[2], args[3]);
-        server.setPriority(5);
-        server.start();
+        throw new UnsupportedOperationException("Use the class 'Main' to invoke from command line");
     }
 }

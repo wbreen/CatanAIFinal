@@ -36,6 +36,7 @@ import java.sql.Timestamp;
 
 import java.util.Calendar;
 import java.util.Iterator;
+import java.util.Properties;
 import java.util.Vector;
 
 
@@ -54,6 +55,18 @@ import java.util.Vector;
  */
 public class SOCDBHelper
 {
+    /** Property to specify the SQL database username. */
+    public static final String JSETTLERS_DB_USER = "jsettlers.db.user";
+
+    /** Property to specify the SQL database password. */
+    public static final String JSETTLERS_DB_PASS = "jsettlers.db.pass";
+
+    /** Property to specify the SQL database type. */
+    public static final String JSETTLERS_DB_DRIVER = "jsettlers.db.driver";
+
+    /** Property to specify the SQL database server. */
+    public static final String JSETTLERS_DB_URL = "jsettlers.db.url";
+
     private static Connection connection = null;
 
     /**
@@ -68,6 +81,9 @@ public class SOCDBHelper
 
     /** Cached password used when reconnecting on error */
     private static String password;
+    
+    /** Cached url used when reconnecting on error */
+    private static String url;
     
     private static String CREATE_ACCOUNT_COMMAND =  "INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?);";
     
@@ -117,36 +133,56 @@ public class SOCDBHelper
      * This makes a connection to the database
      * and initializes the prepared statements.
      *
-     * @param user  the user name for accessing the database
-     * @param pswd  the password for the user
+     * @param props  Properties containing minimally username, password,
+     * connection url and database driver class
      * @return true if the database was initialized
      * @throws SQLException if an SQL command fails, or the db couldn't be
      * initialied
      */
-    public static void initialize(String user, String pswd) throws SQLException
+    public static void initialize(Properties props) throws SQLException
     {
+        if (isConnected())
+            throw new IllegalStateException("Database already initialized");
+        
+        // extract info from properties
+        userName = props.getProperty(JSETTLERS_DB_USER);
+        password = props.getProperty(JSETTLERS_DB_PASS);
+        url = props.getProperty(JSETTLERS_DB_URL);
+        String driver = props.getProperty(JSETTLERS_DB_DRIVER);
+
+        if (driver == null)
+            throw new SQLException("SQL driver not specified");
+        if (url == null)
+            throw new SQLException("SQL url not specified");
+
         try
         {
-            // Load the mysql driver. Revisit exceptions when /any/ JDBC allowed
-            Class.forName("org.gjt.mm.mysql.Driver").newInstance();
-
-            connect(user, pswd);
+            Class.forName(driver).newInstance();
+            connect();
         }
         catch (ClassNotFoundException x)
         {
-            SQLException sx = new SQLException("MySQL driver is unavailable");
+            SQLException sx = new SQLException("SQL driver not found: " + driver);
             sx.initCause(x);
             throw sx;
         }
         catch (Exception x) // everything else
         {
-            // InstantiationException & IllegalAccessException
-            // should not be possible  for org.gjt.mm.mysql.Driver
-            // ClassNotFound
-            SQLException sx = new SQLException("Unable to initialize user database");
+            SQLException sx = new SQLException("Unable to initialize user database: " + url);
             sx.initCause(x);
             throw sx;
         }
+    }
+
+    /**
+     * Returns true if connection has been made. Does not attempt to reconnect
+     * if an error has occured.
+     *
+     * @return true if the connection has been made
+     */
+    public static boolean isConnected() throws SQLException
+    {
+        return connection != null;
     }
 
     /**
@@ -160,7 +196,7 @@ public class SOCDBHelper
     {
         if (connection != null)
         {
-            return (! errorCondition) || connect(userName, password);
+            return (! errorCondition) || connect();
         }
 
         return false;
@@ -169,16 +205,12 @@ public class SOCDBHelper
     /**
      * initialize and checkConnection use this to get ready.
      */
-    private static boolean connect(String user, String pswd)
+    private static boolean connect()
         throws SQLException
     {
-        String url = "jdbc:mysql://localhost/socdata";
-
-        connection = DriverManager.getConnection(url, user, pswd);
+        connection = DriverManager.getConnection(url, userName, password);
 
         errorCondition = false;
-        userName = user;
-        password = pswd;
         
         // prepare PreparedStatements for queries
         createAccountCommand = connection.prepareStatement(CREATE_ACCOUNT_COMMAND);
