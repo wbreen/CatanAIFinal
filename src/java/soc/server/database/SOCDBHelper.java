@@ -31,6 +31,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 
 import java.util.Calendar;
@@ -49,10 +50,46 @@ import java.util.Calendar;
  * It uses a database created with the following commands:
  * CREATE DATABASE socdata;
  * USE socdata;
- * CREATE TABLE users (nickname VARCHAR(20), host VARCHAR(50), password VARCHAR(20), email VARCHAR(50), lastlogin DATE, wins SMALLINT, losses SMALLINT, face SMALLINT);
- * CREATE TABLE logins (nickname VARCHAR(20), host VARCHAR(50), lastlogin DATE);
- * CREATE TABLE games (gamename VARCHAR(20), player1 VARCHAR(20), player2 VARCHAR(20), player3 VARCHAR(20), player4 VARCHAR(20), score1 SMALLINT, score2 SMALLINT, score3 SMALLINT, score4 SMALLINT, starttime TIMESTAMP);
- * CREATE TABLE robotparams (robotname VARCHAR(20), maxgamelength INT, maxeta INT, etabonusfactor FLOAT, adversarialfactor FLOAT, leaderadversarialfactor FLOAT, devcardmultiplier FLOAT, threatmultiplier FLOAT, strategytype INT, starttime TIMESTAMP, endtime TIMESTAMP, gameswon INT, gameslost INT, tradeFlag BOOL);
+ * CREATE TABLE users (nickname VARCHAR(20), 
+ *                     host VARCHAR(50), 
+ *                     password VARCHAR(20),
+ *                     email VARCHAR(50), 
+ *                     lastlogin DATE, 
+ *                     wins INT DEFAULT 0,
+ *                     losses INT DEFAULT 0,
+ *                     face SMALLINT DEFAULT 1,
+ *                     totalpoints INT DEFAULT 0);
+ *
+ * CREATE TABLE logins (nickname VARCHAR(20), 
+ *                      host VARCHAR(50),
+ *                      lastlogin DATE);
+ *
+ * CREATE TABLE games (gamename VARCHAR(20), 
+ *                     player1 VARCHAR(20),
+ *                     player2 VARCHAR(20),
+ *                     player3 VARCHAR(20), 
+ *                     player4 VARCHAR(20),
+ *                     score1 SMALLINT,
+ *                     score2 SMALLINT,
+ *                     score3 SMALLINT,
+ *                     score4 SMALLINT,
+ *                     starttime TIMESTAMP);
+ *
+ * CREATE TABLE robotparams (robotname VARCHAR(20),
+ *                           maxgamelength INT,
+ *                           maxeta INT,
+ *                           etabonusfactor FLOAT,
+ *                           adversarialfactor FLOAT,
+ *                           leaderadversarialfactor FLOAT,
+ *                           devcardmultiplier FLOAT,
+ *                           threatmultiplier FLOAT,
+ *                           strategytype INT,
+ *                           starttime TIMESTAMP,
+ *                           endtime TIMESTAMP,
+ *                           wins INT DEFAULT 0,
+ *                           losses INT DEFAULT 0,
+ *                           tradeFlag BOOL,
+ *                           totalpoints DEFAULT 0);
  *
  */
 public class SOCDBHelper
@@ -72,27 +109,65 @@ public class SOCDBHelper
     /** Cached password used when reconnecting on error */
     private static String password;
     
-    private static String CREATE_ACCOUNT_COMMAND = "INSERT INTO users VALUES (?,?,?,?,?,?,?,?);";
-    private static String RECORD_LOGIN_COMMAND = "INSERT INTO logins VALUES (?,?,?);";
-    private static String USER_PASSWORD_QUERY = "SELECT password FROM users WHERE ( users.nickname = ? );";
-    private static String USER_FACE_QUERY = "SELECT face FROM users WHERE ( users.nickname = ? );";
-    private static String HOST_QUERY = "SELECT nickname FROM users WHERE ( users.host = ? );";
-    private static String LASTLOGIN_UPDATE = "UPDATE users SET lastlogin = ?  WHERE nickname = ? ;";
-    private static String SAVE_GAME_COMMAND = "INSERT INTO games VALUES (?,?,?,?,?,?,?,?,?,?);";
-    private static String ROBOT_PARAMS_QUERY = "SELECT * FROM robotparams WHERE robotname = ?;";
-    private static String UPDATE_STANDINGS_WINS = "UPDATE users SET wins = wins + 1 WHERE nickname = ?;";
-    private static String UPDATE_STANDINGS_LOSSES = "UPDATE users SET losses = losses + 1 WHERE nickname = ?;";
-
-    private static PreparedStatement createAccountCommand = null;
-    private static PreparedStatement recordLoginCommand = null;
-    private static PreparedStatement userPasswordQuery = null;
-    private static PreparedStatement userFaceQuery = null;
+    private static String CREATE_ACCOUNT_COMMAND =  "INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?);";
+    
+    private static String HAS_ACCOUNT_QUERY =       "SELECT * FROM users WHERE nickname = ? AND password = ? ;";
+    
+    private static String HOST_QUERY =              "SELECT nickname FROM users WHERE ( users.host = ? );";
+    
+    private static String HUMAN_ROW_COUNT =         "SELECT count(*) FROM users WHERE wins + losses > 0;";
+    
+    private static String HUMAN_STATS_QUERY =       "SELECT nickname, wins, losses, totalpoints, totalpoints/(wins+losses) AS avg, 100 * (wins/(wins+losses)) AS pct FROM users WHERE (wins+losses) > 0 ORDER BY pct desc, avg desc, totalpoints desc;";
+    
+    private static String LASTLOGIN_UPDATE =        "UPDATE users SET lastlogin = ? WHERE nickname = ? ;";
+    
+    private static String RECORD_LOGIN_COMMAND =    "INSERT INTO logins VALUES (?,?,?);";
+    
+    private static String RESET_HUMAN_STATS =       "UPDATE users SET wins = 0, losses = 0, totalpoints = 0 WHERE nickname = ? AND password = ?;";
+    
+    private static String ROBOT_PARAMS_QUERY =      "SELECT * FROM robotparams WHERE robotname = ?;";
+    
+    private static String ROBOT_ROW_COUNT =         "SELECT count(*) FROM robotparams WHERE wins + losses > 0;";
+    
+    private static String ROBOT_STATS_QUERY =       "SELECT robotname, wins, losses, totalpoints, totalpoints/(wins+losses) AS avg, (100*(wins/(wins+losses))) AS pct FROM robotparams WHERE (wins+losses) > 0 ORDER BY pct desc, avg desc, totalpoints desc;";
+    
+    private static String SAVE_GAME_COMMAND =       "INSERT INTO games VALUES (?,?,?,?,?,?,?,?,?,?);";
+    
+    private static String UPDATE_ROBOT_LOSSES =     "UPDATE robotparams SET losses = losses + 1 WHERE robotparams.robotname = ?;";
+    
+    private static String UPDATE_ROBOT_POINTS =     "UPDATE robotparams SET totalpoints = totalpoints + ? WHERE robotparams.robotname = ?;";
+    
+    private static String UPDATE_ROBOT_WINS =       "UPDATE robotparams SET wins = wins + 1 WHERE robotparams.robotname = ?;";
+    
+    private static String UPDATE_STANDINGS_LOSSES = "UPDATE users SET losses = losses + 1 WHERE users.nickname = ?;";
+    
+    private static String UPDATE_STANDINGS_WINS =   "UPDATE users SET wins = wins + 1 WHERE users.nickname = ?;";
+    
+    private static String UPDATE_TOTAL_POINTS =     "UPDATE users SET totalpoints = totalpoints + ? WHERE users.nickname = ?;";
+    
+    private static String USER_FACE_QUERY =         "SELECT face FROM users WHERE users.nickname = ?;";
+    
+    private static String USER_FACE_UPDATE =        "UPDATE users SET face = ? WHERE nickname = ?;";
+    
+    private static String USER_PASSWORD_QUERY =     "SELECT password FROM users WHERE ( users.nickname = ? );";
+    
+    private static PreparedStatement createAccountCommand = null;    
+    private static PreparedStatement hasAccountQuery = null;
     private static PreparedStatement hostQuery = null;
     private static PreparedStatement lastloginUpdate = null;
-    private static PreparedStatement saveGameCommand = null;
+    private static PreparedStatement recordLoginCommand = null;
+    private static PreparedStatement resetHumanStats = null;
     private static PreparedStatement robotParamsQuery = null;
-    private static PreparedStatement updateStandingsWins = null;
+    private static PreparedStatement saveGameCommand = null;
+    private static PreparedStatement updateRobotLosses = null;
+    private static PreparedStatement updateRobotPoints = null;
+    private static PreparedStatement updateRobotWins = null;
     private static PreparedStatement updateStandingsLosses = null;
+    private static PreparedStatement updateStandingsWins = null;
+    private static PreparedStatement updateTotalPoints = null;
+    private static PreparedStatement userFaceQuery = null;
+    private static PreparedStatement userFaceUpdate = null;
+    private static PreparedStatement userPasswordQuery = null;    
 
     /**
      * This makes a connection to the database
@@ -164,16 +239,23 @@ public class SOCDBHelper
         
         // prepare PreparedStatements for queries
         createAccountCommand = connection.prepareStatement(CREATE_ACCOUNT_COMMAND);
-        recordLoginCommand = connection.prepareStatement(RECORD_LOGIN_COMMAND);
-        userPasswordQuery = connection.prepareStatement(USER_PASSWORD_QUERY);
-        userFaceQuery = connection.prepareStatement(USER_FACE_QUERY);
+        hasAccountQuery = connection.prepareStatement(HAS_ACCOUNT_QUERY);
         hostQuery = connection.prepareStatement(HOST_QUERY);
         lastloginUpdate = connection.prepareStatement(LASTLOGIN_UPDATE);
-        saveGameCommand = connection.prepareStatement(SAVE_GAME_COMMAND);
+        recordLoginCommand = connection.prepareStatement(RECORD_LOGIN_COMMAND);
+        resetHumanStats = connection.prepareStatement(RESET_HUMAN_STATS);
         robotParamsQuery = connection.prepareStatement(ROBOT_PARAMS_QUERY);
-        updateStandingsWins = connection.prepareStatement(UPDATE_STANDINGS_WINS);
+        saveGameCommand = connection.prepareStatement(SAVE_GAME_COMMAND);
+        userFaceQuery = connection.prepareStatement(USER_FACE_QUERY);
+        userFaceUpdate = connection.prepareStatement(USER_FACE_UPDATE);
+        userPasswordQuery = connection.prepareStatement(USER_PASSWORD_QUERY);
+        updateRobotLosses = connection.prepareStatement(UPDATE_ROBOT_LOSSES);
+        updateRobotPoints = connection.prepareStatement(UPDATE_ROBOT_POINTS);
+        updateRobotWins = connection.prepareStatement(UPDATE_ROBOT_WINS);
         updateStandingsLosses = connection.prepareStatement(UPDATE_STANDINGS_LOSSES);
-
+        updateStandingsWins = connection.prepareStatement(UPDATE_STANDINGS_WINS);
+        updateTotalPoints = connection.prepareStatement(UPDATE_TOTAL_POINTS);
+        
         return true;
     }
     
@@ -335,12 +417,10 @@ public class SOCDBHelper
                 createAccountCommand.setString(3, password);
                 createAccountCommand.setString(4, email);
                 createAccountCommand.setDate(5, sqlDate, cal);
-		// current wins
-		createAccountCommand.setInt(6, 0);
-		// current losses
-		createAccountCommand.setInt(7, 0);
-		// default face
-		createAccountCommand.setInt(8, 1);
+                createAccountCommand.setInt(6, 0); // wins
+                createAccountCommand.setInt(7, 0); // losses
+                createAccountCommand.setInt(8, 1); // face
+                createAccountCommand.setInt(9, 0); // totalpoints
 
                 // execute the Command
                 createAccountCommand.executeUpdate();
@@ -443,7 +523,51 @@ public class SOCDBHelper
     }
 
     /**
-     * saves game scores to database (both user and games tables)
+     * Saves faceId to the database 
+     *
+     * @param ga game to be saved
+     *
+     * @return true if the save succeeded
+     *
+     * @throws SQLException if the database isn't available
+     */
+    public static boolean saveFaces(SOCGame ga) throws SQLException
+    {
+        // Insure that the JDBC connection is still valid
+        if (checkConnection())
+        {
+            try
+            {
+                // Record face for humans
+                for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
+                {
+                    SOCPlayer pl = ga.getPlayer(i);
+                    
+                    // If the player is human
+                    if (!pl.isRobot())
+                    {
+                        // Store the faceId in the database
+                        userFaceUpdate.setInt(1, pl.getFaceId());
+                        userFaceUpdate.setString(2, pl.getName());
+                        userFaceUpdate.executeUpdate();
+                    }
+                }
+                
+                return true;
+            }
+            catch (SQLException sqlE)
+            {
+                errorCondition = true;
+                sqlE.printStackTrace();
+                throw sqlE;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Saves game scores to the database (both user and games tables)
      *
      * @param ga game to be saved
      *
@@ -453,7 +577,7 @@ public class SOCDBHelper
      */
     public static boolean saveGameScores(SOCGame ga) throws SQLException
     {
-	int sGCindex = 1;
+        int sGCindex = 1;
         SOCPlayer pl;
 
         // ensure that the JDBC connection is still valid
@@ -470,15 +594,15 @@ public class SOCDBHelper
                     pl = ga.getPlayer(i);
 
 		    saveGameCommand.setString(sGCindex++, pl.getName());
-		}
+                }
                 for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                 {
                     pl = ga.getPlayer(i);
-
-		    saveGameCommand.setInt(sGCindex++, pl.getTotalVP());
-		}
-
-		saveGameCommand.setTimestamp(sGCindex++, new Timestamp(ga.getStartTime().getTime()));
+                    
+                    saveGameCommand.setInt(sGCindex++, pl.getTotalVP());
+                }
+                
+                saveGameCommand.setTimestamp(sGCindex++, new Timestamp(ga.getStartTime().getTime()));
 
                 // execute the Command
                 saveGameCommand.executeUpdate();
@@ -487,19 +611,48 @@ public class SOCDBHelper
                 for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                 {
                     pl = ga.getPlayer(i);
-
-                    if (pl.getTotalVP() >= 10)
+                    
+                    // Choose the table to update
+                    if (pl.isRobot())
                     {
-                        updateStandingsWins.setString(1, pl.getName());
-			updateStandingsWins.executeUpdate();
-		    } 
-		    else 
-		    {
-                        updateStandingsLosses.setString(1, pl.getName());
-			updateStandingsLosses.executeUpdate();
-		    }
-		}
-
+                        // Update totalpoints
+                        updateRobotPoints.setString(2, pl.getName());
+                        updateRobotPoints.setInt(1, pl.getTotalVP());
+                        updateRobotPoints.executeUpdate();
+                        
+                        // Update wins or losses
+                        if (pl.getTotalVP() >= 10)
+                        {
+                            updateRobotWins.setString(1, pl.getName());
+                            updateRobotWins.executeUpdate();
+                        }
+                        else
+                        {
+                            updateRobotLosses.setString(1, pl.getName());
+                            updateRobotLosses.executeUpdate();
+                        }
+                    }
+                    else // The player is human
+                    {
+                        // Update totalpoints
+                        updateTotalPoints.setString(2, pl.getName());
+                        updateTotalPoints.setInt(1, pl.getTotalVP());
+                        updateTotalPoints.executeUpdate();
+                        
+                        // Update wins or losses
+                        if (pl.getTotalVP() >= 10)
+                        {
+                            updateStandingsWins.setString(1, pl.getName());
+                            updateStandingsWins.executeUpdate();
+                        }
+                        else
+                        {
+                            updateStandingsLosses.setString(1, pl.getName());
+                            updateStandingsLosses.executeUpdate();
+                        }
+                    }
+                }
+                
                 return true;
             }
             catch (SQLException sqlE)
@@ -568,6 +721,170 @@ public class SOCDBHelper
 
     /**
      * DOCUMENT ME!
+     *
+     * @param robotName DOCUMENT ME!
+     *
+     * @return null if robotName not in database
+     *
+     * @throws SQLException DOCUMENT ME!
+     */
+    public static String[][] getStatistics(String type) throws SQLException
+    {
+        int count = 0;
+        String[][] statistics = null;
+        Statement stmt = connection.createStatement();
+        
+        // ensure that the JDBC connection is still valid
+        if (checkConnection())
+        {
+            try
+            {                
+                // Get the expected number of rows in the result
+                if (type.equals("robot"))
+                {
+                    try
+                    {
+                        ResultSet crs = stmt.executeQuery(ROBOT_ROW_COUNT);
+                        if (crs.next())
+                        {
+                            count = crs.getInt("count(*)");
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        System.out.println("SOC.server.database.SOCDBHelper.getStatistics - " +
+                                "Error getting count of " + type + "s: " + e);
+                    }
+                }
+                else if (type.equals("human"))
+                {
+                    try
+                    {
+                        ResultSet crs = stmt.executeQuery(HUMAN_ROW_COUNT);
+                        if (crs.next())
+                        {
+                            count = crs.getInt("count(*)");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        System.out.println("SOC.server.database.SOCDBHelper.getStatistics - " +
+                                "Error getting count of " + type + "s: " + e);
+                    }
+                }
+                else
+                {
+                    System.err.println("SOCDBHelper.getStatistics - Unknown type: " + type);
+                    return statistics;
+                }
+ 
+                if (count == 0)  // There is no data to return
+                {
+                    statistics = new String[1][1];
+                    statistics[0][0] = "None";
+                    return statistics;
+                }
+                else // There is data to return
+                {            
+                    ResultSet resultSet = null;
+                    
+                    // Create the array of statistics to return
+                    statistics = new String[count][7];
+
+                    // Execute the appropriate query
+                    if (type.equals("robot"))
+                    {
+                        resultSet = stmt.executeQuery(ROBOT_STATS_QUERY);
+                    }
+                    else
+                    {
+                        resultSet = stmt.executeQuery(HUMAN_STATS_QUERY);
+                    }
+
+                    // Transfer results to statistics array
+                    for (int row = 0; row < count; row++)
+                    {
+                        if (resultSet.next())
+                        {
+                            // Add the six columns returned by the query
+                            statistics[row][0] = resultSet.getString(1);    // Name
+                            statistics[row][1] = Integer.toString(row + 1); // Rank
+                            statistics[row][2] = resultSet.getString(2);    // Wins
+                            statistics[row][3] = resultSet.getString(3);    // Losses
+                            statistics[row][4] = resultSet.getString(4);    // Total Points
+                            statistics[row][5] = resultSet.getString(5);    // Average Points
+                            statistics[row][6] = resultSet.getString(6);    // Percent Wins
+                        }
+                        else
+                        {
+                            System.err.println("SOCDBHelper.retrieveStats - Unexpected end of resultSet at row: " + row);
+                        }
+                    }
+                    resultSet.close();
+                }
+            }
+            catch (SQLException sqlE)
+            {
+                errorCondition = true;
+                sqlE.printStackTrace();
+                throw sqlE;
+            }
+        }        
+        return statistics;
+    }
+    
+    /**
+     * DOCUMENT ME!
+     *
+     * @param userName for account to be reset
+     * @param password for account to be reset
+     *
+     * @return true if the account was reset
+     *
+     * @throws SQLException DOCUMENT ME!
+     */
+    public static String resetStatistics(String userName, String password) throws SQLException
+    {
+        // ensure that the JDBC connection is still valid
+        if (checkConnection())
+        {
+            try
+            {
+                // Fill in the data for the hasAccount prepared statement
+                hasAccountQuery.setString(1, userName);
+                hasAccountQuery.setString(2, password);
+                
+                // Execute query
+                ResultSet rs = hasAccountQuery.executeQuery();
+                
+                if (rs.next())
+                {                
+                    // Fill in the data values to the Prepared statement
+                    resetHumanStats.setString(1, userName);
+                    resetHumanStats.setString(2, password);
+
+                    // execute the Command
+                    resetHumanStats.executeUpdate();
+                    
+                    return "Statistics have been successfully reset ";
+                }
+                else
+                {
+                    return "Password given does not match password ";
+                }
+            }
+            catch (SQLException sqlE)
+            {
+                errorCondition = true;
+                sqlE.printStackTrace();
+                throw sqlE;
+            }
+        }
+        return "Connection failed.";
+    }
+
+    /**
+     * DOCUMENT ME!
      */
     public static void cleanup() throws SQLException
     {
@@ -576,11 +893,21 @@ public class SOCDBHelper
             try
             {
                 createAccountCommand.close();
-                userPasswordQuery.close();
+                hasAccountQuery.close();
                 hostQuery.close();
-                lastloginUpdate.close();
-                saveGameCommand.close();
+                lastloginUpdate.close();                
+                recordLoginCommand.close();
+                resetHumanStats.close();
                 robotParamsQuery.close();
+                saveGameCommand.close();                
+                updateStandingsWins.close();
+                updateStandingsLosses.close();
+                updateTotalPoints.close();
+                updateRobotWins.close();
+                updateRobotLosses.close();
+                updateRobotPoints.close();
+                userFaceQuery.close();
+                userPasswordQuery.close();                                
                 connection.close();
             }
             catch (SQLException sqlE)
