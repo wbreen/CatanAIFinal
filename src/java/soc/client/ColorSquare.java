@@ -53,143 +53,76 @@ public class ColorSquare extends Canvas implements MouseListener
     public final static int BOUNDED_DEC = 4;
     public final static int WIDTH = 16;
     public final static int HEIGHT = 16;
-    Color color;
     int intValue;
     boolean boolValue;
     boolean valueVis;
-    int numW;
-    int numH;
-    int numA;
     int kind;
     int upperBound;
     int lowerBound;
     boolean interactive;
 
     /**
-     * Creates a new ColorSquare object.
+     * Creates a new ColorSquare object without a visible value.
+     *
+     * @see ColorSquare(int, boolean, Color, int, int)
      */
     public ColorSquare()
     {
-        super();
-
-        setFont(new Font("Geneva", Font.PLAIN, 10));
-
-        color = GREY;
-
+        this(NUMBER, false, GREY, 0, 0);
         valueVis = false;
-        intValue = 0;
-        kind = NUMBER;
-        interactive = false;
     }
 
     /**
-     * Creates a new ColorSquare object.
+     * Creates a new ColorSquare object with specified background color. Type
+     * <code>NUMBER</code>, non-interactive, upper=99, lower=0.
      *
-     * @param c DOCUMENT ME!
+     * @param c background color
+     * @see ColorSquare(int, boolean, Color, int, int)
      */
     public ColorSquare(Color c)
     {
-        super();
-
-        setFont(new Font("Geneva", Font.PLAIN, 10));
-
-        color = c;
-
-        valueVis = false;
-        intValue = 0;
-        kind = NUMBER;
-        interactive = false;
-
-        this.addMouseListener(this);
+        this(NUMBER, false, c, 99, 0);
     }
 
     /**
-     * Creates a new ColorSquare object.
+     * Creates a new ColorSquare object with specified background color and
+     * initial value. Type <code>NUMBER</code>, non-interactive, upper=99,
+     * lower=0.
      *
-     * @param c DOCUMENT ME!
-     * @param v DOCUMENT ME!
+     * @param c background color
+     * @param v initial int value
+     * @see ColorSquare(int, boolean, Color, int, int)
      */
     public ColorSquare(Color c, int v)
     {
-        super();
-
-        setFont(new Font("Geneva", Font.PLAIN, 10));
-
-        color = c;
-
-        valueVis = true;
+        this(NUMBER, false, c, 99, 0);
         intValue = v;
-        kind = NUMBER;
-        interactive = false;
-
-        this.addMouseListener(this);
     }
 
     /**
-     * Creates a new ColorSquare object.
+     * Creates a new ColorSquare of the specified kind and background
+     * color. Possibly interactive. For kind = NUMBER, upper=99, lower=0.
      *
-     * @param k DOCUMENT ME!
-     * @param in DOCUMENT ME!
-     * @param c DOCUMENT ME!
+     * @param k Kind: NUMBER, YES_NO, CHECKBOX, BOUNDED_INC, BOUNDED_DECk
+     * @param in interactive flag allowing user interaction
+     * @param c background color
+     * @see ColorSquare(int, boolean, Color, int, int)
      */
     public ColorSquare(int k, boolean in, Color c)
     {
-        super();
-
-        setFont(new Font("Geneva", Font.PLAIN, 10));
-
-        color = c;
-        kind = k;
-        interactive = in;
-
-        switch (k)
-        {
-        case NUMBER:
-            valueVis = true;
-            intValue = 0;
-
-            break;
-
-        case YES_NO:
-            valueVis = true;
-            boolValue = false;
-
-            break;
-
-        case CHECKBOX:
-            valueVis = true;
-            boolValue = false;
-
-            break;
-
-        case BOUNDED_INC:
-            valueVis = true;
-            boolValue = false;
-            upperBound = 99;
-            lowerBound = 0;
-
-            break;
-
-        case BOUNDED_DEC:
-            valueVis = true;
-            boolValue = false;
-            upperBound = 99;
-            lowerBound = 0;
-
-            break;
-        }
-
-        this.addMouseListener(this);
+        this(k, in, c, 99, 0);
     }
 
     /**
-     * Creates a new ColorSquare object.
+     * Creates a new ColorSquare of the specified kind and background
+     * color. Possibly interactive, with upper and lower bounds specified for
+     * NUMBER kinds.
      *
-     * @param k DOCUMENT ME!
-     * @param in DOCUMENT ME!
-     * @param c DOCUMENT ME!
-     * @param upper DOCUMENT ME!
-     * @param lower DOCUMENT ME!
+     * @param k Kind: NUMBER, YES_NO, CHECKBOX, BOUNDED_INC, BOUNDED_DECk
+     * @param in interactive flag allowing user interaction
+     * @param c background color
+     * @param upper upper bound if k == NUMBER
+     * @param lower lower bound if k == NUMBER
      */
     public ColorSquare(int k, boolean in, Color c, int upper, int lower)
     {
@@ -197,7 +130,7 @@ public class ColorSquare extends Canvas implements MouseListener
 
         setFont(new Font("Geneva", Font.PLAIN, 10));
 
-        color = c;
+        setBackground(c);
         kind = k;
         interactive = in;
 
@@ -248,8 +181,7 @@ public class ColorSquare extends Canvas implements MouseListener
      */
     public void setColor(Color c)
     {
-        color = c;
-        draw();
+        setBackground(c);
     }
 
     /**
@@ -274,65 +206,13 @@ public class ColorSquare extends Canvas implements MouseListener
 
     /**
      * DOCUMENT ME!
-     */
-    public void addNotify()
-    {
-        super.addNotify();
-        measure();
-    }
-
-    protected void measure()
-    {
-        FontMetrics fm = this.getFontMetrics(this.getFont());
-
-        if (fm == null)
-        {
-            return;
-        }
-
-        numH = fm.getHeight();
-
-        switch (kind)
-        {
-        case NUMBER:
-        case BOUNDED_INC:
-        case BOUNDED_DEC:
-            numW = fm.stringWidth(Integer.toString(intValue));
-
-            break;
-
-        case YES_NO:
-
-            if (boolValue)
-            {
-                numW = fm.stringWidth("Y");
-            }
-            else
-            {
-                numW = fm.stringWidth("N");
-            }
-
-            break;
-
-        case CHECKBOX:
-            break;
-        }
-
-        numA = fm.getAscent();
-    }
-
-    /**
-     * DOCUMENT ME!
      *
      * @param g DOCUMENT ME!
      */
     public void paint(Graphics g)
     {
-        if (g != null)
-        {
             g.setPaintMode();
-            g.setColor(color);
-            g.fillRect(0, 0, WIDTH, HEIGHT);
+            g.clearRect(0, 0, WIDTH, HEIGHT);
             g.setColor(Color.black);
             g.drawRect(0, 0, WIDTH - 1, HEIGHT - 1);
 
@@ -341,33 +221,38 @@ public class ColorSquare extends Canvas implements MouseListener
 
             if (valueVis)
             {
+                FontMetrics fm = this.getFontMetrics(this.getFont());
+                int numW;
+                //int numH = fm.getHeight();
+                //int numA = fm.getAscent();
                 switch (kind)
                 {
                 case NUMBER:
                 case BOUNDED_INC:
                 case BOUNDED_DEC:
-                    x = (WIDTH - numW) / 2;
 
+                    numW = fm.stringWidth(Integer.toString(intValue));
+
+                    x = (WIDTH - numW) / 2;
+                    
                     // y = numA + (HEIGHT - numH) / 2; // proper way
                     y = 12; // way that works
+
                     g.drawString(Integer.toString(intValue), x, y);
 
                     break;
 
                 case YES_NO:
+                    String value = (boolValue ? "Y" : "N");
+
+                    numW = fm.stringWidth(value);
+
                     x = (WIDTH - numW) / 2;
 
                     // y = numA + (HEIGHT - numH) / 2; // proper way
                     y = 12; // way that works
 
-                    if (boolValue)
-                    {
-                        g.drawString("Y", x, y);
-                    }
-                    else
-                    {
-                        g.drawString("N", x, y);
-                    }
+                    g.drawString(value, x, y);
 
                     break;
 
@@ -384,15 +269,6 @@ public class ColorSquare extends Canvas implements MouseListener
                     break;
                 }
             }
-        }
-    }
-
-    /**
-     * DOCUMENT ME!
-     */
-    public void draw()
-    {
-        paint(this.getGraphics());
     }
 
     /**
@@ -403,8 +279,7 @@ public class ColorSquare extends Canvas implements MouseListener
     public void addValue(int v)
     {
         intValue += v;
-        measure();
-        draw();
+        repaint();
     }
 
     /**
@@ -415,8 +290,7 @@ public class ColorSquare extends Canvas implements MouseListener
     public void subtractValue(int v)
     {
         intValue -= v;
-        measure();
-        draw();
+        repaint();
     }
 
     /**
@@ -427,8 +301,7 @@ public class ColorSquare extends Canvas implements MouseListener
     public void setIntValue(int v)
     {
         intValue = v;
-        measure();
-        draw();
+        repaint();
     }
 
     /**
@@ -449,8 +322,7 @@ public class ColorSquare extends Canvas implements MouseListener
     public void setBoolValue(boolean v)
     {
         boolValue = v;
-        measure();
-        draw();
+        repaint();
     }
 
     /**
@@ -517,15 +389,11 @@ public class ColorSquare extends Canvas implements MouseListener
             case YES_NO:
             case CHECKBOX:
                 boolValue = !boolValue;
-                measure();
-                draw();
 
                 break;
 
             case NUMBER:
                 intValue++;
-                measure();
-                draw();
 
                 break;
 
@@ -536,9 +404,6 @@ public class ColorSquare extends Canvas implements MouseListener
                     intValue++;
                 }
 
-                measure();
-                draw();
-
                 break;
 
             case BOUNDED_DEC:
@@ -548,11 +413,10 @@ public class ColorSquare extends Canvas implements MouseListener
                     intValue--;
                 }
 
-                measure();
-                draw();
-
                 break;
             }
+
+            repaint();
         }
     }
 }
