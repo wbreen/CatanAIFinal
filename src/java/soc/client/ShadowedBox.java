@@ -53,6 +53,16 @@ public class ShadowedBox extends Canvas
         this.interior = interior;
     }
 
+    public void setInterior(Color interior)
+    {
+        this.interior = interior;
+    }
+    
+    public Color getInterior()
+    {
+        return interior;
+    }
+
     /**
      * DOCUMENT ME!
      *
@@ -102,29 +112,5 @@ public class ShadowedBox extends Canvas
         {
             g.drawLine(w - i, xm, w - i, h);
         }
-    }
-
-    /**
-     * DOCUMENT ME!
-     */
-    public void draw()
-    {
-        paint(this.getGraphics());
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param g DOCUMENT ME!
-     */
-    public void update(Graphics g)
-    {
-        paint(g);
-    }
-
-    // Needed because it's a component
-    public void addNotify()
-    {
-        super.addNotify();
     }
 }
