@@ -204,7 +204,7 @@
         </fileset>
       </copy>
       <copy todir="${target}">
-        <fileset dir="${web.src}" includes="index.html" />
+        <fileset dir="${web.src}" includes="*.html" />
       </copy>
   </target>
 
