@@ -50,8 +50,8 @@
 
   <!-- packaging -->
   <property name="client.jar" value="${Name}.jar" />
-  <property name="server.jar" value="JSettled.jar" />
-  <property name="test.jar"   value="${Name}-Test.jar" />
+  <property name="server.jar" value="${Name}Server.jar" />
+  <property name="test.jar"   value="${Name}Tests.jar" />
 
   <property name="dist.name"     value="${name}-${version}" />
   <property name="dist.src.name" value="${dist.name}-src" />
@@ -66,6 +66,7 @@
   <fileset id="readme.files" dir=".">
     <include name="COPYING.txt" />
     <include name="README.txt" />
+    <include name="TODO.txt" />
     <include name="VERSIONS.txt" />
   </fileset>
 
@@ -195,6 +196,11 @@
           <attribute name="Class-Path" value="${client.jar}" />
         </manifest>
       </jar>
+      <copy todir="${bin.target}" preservelastmodified="true">
+        <fileset dir="${bin.src}">
+          <include name="jsettlers*" />
+        </fileset>
+      </copy>
   </target>
 
   <!-- ************************************** -->
@@ -274,6 +280,7 @@
         <fileset dir="${target}">
           <include name="${client.jar}" />
           <include name="${server.jar}" />
+          <include name="bin/" />
           <include name="docs/" />
           <include name="lib/" />
         </fileset>
@@ -305,6 +312,7 @@
       <copy todir="${dist.src.tmp}" preservelastmodified="true">
         <fileset refid="readme.files" />
         <fileset dir=".">
+          <include name="README.developer" />
           <include name="build.xml" />
           <include name="build.properties" />
           <include name="${src}/" />
@@ -313,8 +321,6 @@
       </copy>
 
       <tar destfile="${dist.src.tgz}" compression="gzip"
-           basedir="${dist}" includes="${dist.src.name}/" />
-      <zip destfile="${dist.src.zip}"
            basedir="${dist}" includes="${dist.src.name}/" />
 
       <!-- clean up -->

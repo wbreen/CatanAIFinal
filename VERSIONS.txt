@@ -1,5 +1,12 @@
 [ The list of the different public versions of JSettlers ]
 
+    > 1.1 (build 2004-xx-xx)
+
+- jsettlers[.bat] and jsettlersd[.bat] scripts added for easier command
+  line startup
+- Clients now accept 0 args and prompt for server when startd from
+  comand line
+
     > 1.0.4 (build 2004-xx-xx)
 
 - build.xml file added for Ant builds
