@@ -46,51 +46,9 @@ import java.util.Calendar;
  * @author Robert S. Thomas
  */
 /**
- * This code assumes that you're using mySQL as your database.
- * It uses a database created with the following commands:
- * CREATE DATABASE socdata;
- * USE socdata;
- * CREATE TABLE users (nickname VARCHAR(20), 
- *                     host VARCHAR(50), 
- *                     password VARCHAR(20),
- *                     email VARCHAR(50), 
- *                     lastlogin DATE, 
- *                     wins INT DEFAULT 0,
- *                     losses INT DEFAULT 0,
- *                     face SMALLINT DEFAULT 1,
- *                     totalpoints INT DEFAULT 0);
- *
- * CREATE TABLE logins (nickname VARCHAR(20), 
- *                      host VARCHAR(50),
- *                      lastlogin DATE);
- *
- * CREATE TABLE games (gamename VARCHAR(20), 
- *                     player1 VARCHAR(20),
- *                     player2 VARCHAR(20),
- *                     player3 VARCHAR(20), 
- *                     player4 VARCHAR(20),
- *                     score1 SMALLINT,
- *                     score2 SMALLINT,
- *                     score3 SMALLINT,
- *                     score4 SMALLINT,
- *                     starttime TIMESTAMP);
- *
- * CREATE TABLE robotparams (robotname VARCHAR(20),
- *                           maxgamelength INT,
- *                           maxeta INT,
- *                           etabonusfactor FLOAT,
- *                           adversarialfactor FLOAT,
- *                           leaderadversarialfactor FLOAT,
- *                           devcardmultiplier FLOAT,
- *                           threatmultiplier FLOAT,
- *                           strategytype INT,
- *                           starttime TIMESTAMP,
- *                           endtime TIMESTAMP,
- *                           wins INT DEFAULT 0,
- *                           losses INT DEFAULT 0,
- *                           tradeFlag BOOL,
- *                           totalpoints DEFAULT 0);
- *
+ * This code assumes that you're using mySQL as your database. The schema to
+ * create a database for JSettlers can be found in the distribution
+ * <code>$JSETTLERS/bin/sql/jsettlers-init.sql</code>.
  */
 public class SOCDBHelper
 {
@@ -133,17 +91,9 @@ public class SOCDBHelper
     
     private static String SAVE_GAME_COMMAND =       "INSERT INTO games VALUES (?,?,?,?,?,?,?,?,?,?);";
     
-    private static String UPDATE_ROBOT_LOSSES =     "UPDATE robotparams SET losses = losses + 1 WHERE robotparams.robotname = ?;";
+    private static String UPDATE_ROBOT_STATS =      "UPDATE robotparams SET wins = wins + ?, losses = losses + ?, totalpoints = totalpoints + ? WHERE robotname = ?;";
     
-    private static String UPDATE_ROBOT_POINTS =     "UPDATE robotparams SET totalpoints = totalpoints + ? WHERE robotparams.robotname = ?;";
-    
-    private static String UPDATE_ROBOT_WINS =       "UPDATE robotparams SET wins = wins + 1 WHERE robotparams.robotname = ?;";
-    
-    private static String UPDATE_STANDINGS_LOSSES = "UPDATE users SET losses = losses + 1 WHERE users.nickname = ?;";
-    
-    private static String UPDATE_STANDINGS_WINS =   "UPDATE users SET wins = wins + 1 WHERE users.nickname = ?;";
-    
-    private static String UPDATE_TOTAL_POINTS =     "UPDATE users SET totalpoints = totalpoints + ? WHERE users.nickname = ?;";
+    private static String UPDATE_USER_STATS = "UPDATE users SET wins = wins + ?, losses = losses + ?, totalpoints = totalpoints + ? WHERE nickname = ?;";
     
     private static String USER_FACE_QUERY =         "SELECT face FROM users WHERE users.nickname = ?;";
     
@@ -159,12 +109,8 @@ public class SOCDBHelper
     private static PreparedStatement resetHumanStats = null;
     private static PreparedStatement robotParamsQuery = null;
     private static PreparedStatement saveGameCommand = null;
-    private static PreparedStatement updateRobotLosses = null;
-    private static PreparedStatement updateRobotPoints = null;
-    private static PreparedStatement updateRobotWins = null;
-    private static PreparedStatement updateStandingsLosses = null;
-    private static PreparedStatement updateStandingsWins = null;
-    private static PreparedStatement updateTotalPoints = null;
+    private static PreparedStatement updateRobotStats = null;
+    private static PreparedStatement updateUserStats = null;
     private static PreparedStatement userFaceQuery = null;
     private static PreparedStatement userFaceUpdate = null;
     private static PreparedStatement userPasswordQuery = null;    
@@ -249,12 +195,8 @@ public class SOCDBHelper
         userFaceQuery = connection.prepareStatement(USER_FACE_QUERY);
         userFaceUpdate = connection.prepareStatement(USER_FACE_UPDATE);
         userPasswordQuery = connection.prepareStatement(USER_PASSWORD_QUERY);
-        updateRobotLosses = connection.prepareStatement(UPDATE_ROBOT_LOSSES);
-        updateRobotPoints = connection.prepareStatement(UPDATE_ROBOT_POINTS);
-        updateRobotWins = connection.prepareStatement(UPDATE_ROBOT_WINS);
-        updateStandingsLosses = connection.prepareStatement(UPDATE_STANDINGS_LOSSES);
-        updateStandingsWins = connection.prepareStatement(UPDATE_STANDINGS_WINS);
-        updateTotalPoints = connection.prepareStatement(UPDATE_TOTAL_POINTS);
+        updateRobotStats = connection.prepareStatement(UPDATE_ROBOT_STATS);
+        updateUserStats = connection.prepareStatement(UPDATE_USER_STATS);
         
         return true;
     }
@@ -578,7 +520,6 @@ public class SOCDBHelper
     public static boolean saveGameScores(SOCGame ga) throws SQLException
     {
         int sGCindex = 1;
-        SOCPlayer pl;
 
         // ensure that the JDBC connection is still valid
         if (checkConnection())
@@ -591,13 +532,13 @@ public class SOCDBHelper
 		// iterate through the players
                 for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                 {
-                    pl = ga.getPlayer(i);
+                    SOCPlayer pl = ga.getPlayer(i);
 
 		    saveGameCommand.setString(sGCindex++, pl.getName());
                 }
                 for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                 {
-                    pl = ga.getPlayer(i);
+                    SOCPlayer pl = ga.getPlayer(i);
                     
                     saveGameCommand.setInt(sGCindex++, pl.getTotalVP());
                 }
@@ -610,46 +551,28 @@ public class SOCDBHelper
 		// iterate through the players
                 for (int i = 0; i < SOCGame.MAXPLAYERS; i++)
                 {
-                    pl = ga.getPlayer(i);
+                    SOCPlayer pl = ga.getPlayer(i);
+                    int points = pl.getTotalVP();
+                    boolean isWinner = points >= 10;
                     
                     // Choose the table to update
                     if (pl.isRobot())
                     {
-                        // Update totalpoints
-                        updateRobotPoints.setString(2, pl.getName());
-                        updateRobotPoints.setInt(1, pl.getTotalVP());
-                        updateRobotPoints.executeUpdate();
-                        
-                        // Update wins or losses
-                        if (pl.getTotalVP() >= 10)
-                        {
-                            updateRobotWins.setString(1, pl.getName());
-                            updateRobotWins.executeUpdate();
-                        }
-                        else
-                        {
-                            updateRobotLosses.setString(1, pl.getName());
-                            updateRobotLosses.executeUpdate();
-                        }
+                        updateRobotStats.setInt(1, (isWinner ? 1 : 0)); // wins
+                        updateRobotStats.setInt(2, (isWinner ? 0 : 1)); // losses
+                        updateRobotStats.setInt(3, points); // totalpoints
+                        updateRobotStats.setString(4, pl.getName());
+
+                        updateRobotStats.executeUpdate();
                     }
                     else // The player is human
                     {
-                        // Update totalpoints
-                        updateTotalPoints.setString(2, pl.getName());
-                        updateTotalPoints.setInt(1, pl.getTotalVP());
-                        updateTotalPoints.executeUpdate();
-                        
-                        // Update wins or losses
-                        if (pl.getTotalVP() >= 10)
-                        {
-                            updateStandingsWins.setString(1, pl.getName());
-                            updateStandingsWins.executeUpdate();
-                        }
-                        else
-                        {
-                            updateStandingsLosses.setString(1, pl.getName());
-                            updateStandingsLosses.executeUpdate();
-                        }
+                        updateUserStats.setInt(1, (isWinner ? 1 : 0)); // wins
+                        updateUserStats.setInt(2, (isWinner ? 0 : 1)); // losses
+                        updateUserStats.setInt(3, points); // totalpoints
+                        updateUserStats.setString(4, pl.getName());
+
+                        updateUserStats.executeUpdate();
                     }
                 }
                 
@@ -900,12 +823,8 @@ public class SOCDBHelper
                 resetHumanStats.close();
                 robotParamsQuery.close();
                 saveGameCommand.close();                
-                updateStandingsWins.close();
-                updateStandingsLosses.close();
-                updateTotalPoints.close();
-                updateRobotWins.close();
-                updateRobotLosses.close();
-                updateRobotPoints.close();
+                updateRobotStats.close();
+                updateUserStats.close();
                 userFaceQuery.close();
                 userPasswordQuery.close();                                
                 connection.close();
