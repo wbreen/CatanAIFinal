@@ -258,138 +258,105 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         GridBagConstraints c = new GridBagConstraints();
         Panel mainPane = new Panel(gbl);
 
+        // Default constraint
         c.fill = GridBagConstraints.BOTH;
+
+        // First row
+        c.gridy = 0;
+        c.gridx = 0;
+
         c.gridwidth = GridBagConstraints.REMAINDER;
+        c.insets.top = 5;
+        c.insets.bottom = 5;
+        c.insets.right = 5;
+        c.insets.left = 5;
         gbl.setConstraints(status, c);
         mainPane.add(status);
 
         Label l;
 
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
+        // Second row
+        c.gridy = 1;
+        c.gridwidth = 1;
+        c.insets.top = 0;
+
+        c.gridx = 0;
 
         l = new Label("Your Nickname:");
-        c.gridwidth = 1;
         gbl.setConstraints(l, c);
         mainPane.add(l);
 
-        c.gridwidth = 1;
+        c.gridx = GridBagConstraints.RELATIVE;
+
         gbl.setConstraints(nick, c);
         mainPane.add(nick);
 
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
-
         l = new Label("Optional Password:");
-        c.gridwidth = 1;
         gbl.setConstraints(l, c);
         mainPane.add(l);
 
-        c.gridwidth = 1;
         gbl.setConstraints(pass, c);
         mainPane.add(pass);
 
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
+        // Third row
+        c.gridy = 2;
+        c.gridwidth = 1;
 
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
+        c.gridx = 0;
 
         l = new Label("New Channel:");
-        c.gridwidth = 1;
         gbl.setConstraints(l, c);
         mainPane.add(l);
 
-        c.gridwidth = 1;
+        c.gridx = GridBagConstraints.RELATIVE;
+
         gbl.setConstraints(channel, c);
         mainPane.add(channel);
 
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
-
         l = new Label("New Game:");
-        c.gridwidth = 1;
         gbl.setConstraints(l, c);
         mainPane.add(l);
 
-        c.gridwidth = 1;
         gbl.setConstraints(game, c);
         mainPane.add(game);
 
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
-
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
-
-        l = new Label();
+        // Fourth row
+        c.gridy = 3;
         c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
 
-        c.gridwidth = 1;
+        c.gridx = 1;
         gbl.setConstraints(jc, c);
         mainPane.add(jc);
 
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
-
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
-
-        c.gridwidth = 1;
+        c.gridx = 3;
         gbl.setConstraints(jg, c);
         mainPane.add(jg);
 
-        l = new Label();
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
-
-        l = new Label("Channels");
+        // Fifth Row
+        c.gridy = 4;
         c.gridwidth = 2;
+
+        c.gridx = 0;
+        l = new Label("Channels");
         gbl.setConstraints(l, c);
         mainPane.add(l);
 
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
-
+        c.gridx = 2;
         l = new Label("Games");
-        c.gridwidth = GridBagConstraints.REMAINDER;
         gbl.setConstraints(l, c);
         mainPane.add(l);
 
+        // Sixth Row
+        c.gridy = 5;
         c.gridwidth = 2;
         c.gridheight = GridBagConstraints.REMAINDER;
+        c.insets.bottom = 5;
+
+        c.gridx = 0;
         gbl.setConstraints(chlist, c);
         mainPane.add(chlist);
 
-        l = new Label();
-        c.gridwidth = 1;
-        gbl.setConstraints(l, c);
-        mainPane.add(l);
-
-        c.gridwidth = GridBagConstraints.REMAINDER;
+        c.gridx = 2;
         gbl.setConstraints(gmlist, c);
         mainPane.add(gmlist);
 
@@ -3351,7 +3318,8 @@ public class SOCPlayerClient extends Applet implements Runnable, ActionListener
         client.initVisualElements(); // after the background is set
         
         frame.add(client, BorderLayout.CENTER);
-        frame.setSize(620, 400);
+        frame.pack();
+        frame.setResizable(false);
         frame.setVisible(true);
 
         client.connect();
