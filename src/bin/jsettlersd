@@ -122,7 +122,7 @@ if $darwin; then
   TOOLS_JAR="/System/Library/Frameworks/JavaVM.framework/Versions/${JAVA_VERSION}/Classes/classes.jar"
 fi
 
-MAIN_CLASS=soc.server.SOCServer
+MAIN_CLASS=soc.server.Main
 
 "$JAVACMD" \
   $JSETTLERS_OPTS \
