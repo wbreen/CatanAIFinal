@@ -50,16 +50,18 @@ public class Pair
      *
      * @return DOCUMENT ME!
      */
-    public boolean equals(Pair ip)
+    public boolean equals(Object o)
     {
-        if (((ip.a == a) && (ip.b == b)) || ((ip.a == b) && (ip.b == a)))
+        if (o instanceof Pair)
         {
-            return true;
+            Pair ip = (Pair)o;
+            if (((ip.a == a) && (ip.b == b)) || ((ip.a == b) && (ip.b == a)))
+            {
+                return true;
+            }
         }
-        else
-        {
-            return false;
-        }
+
+        return false;
     }
 
     /**

@@ -50,16 +50,18 @@ public class IntPair
      *
      * @return DOCUMENT ME!
      */
-    public boolean equals(IntPair ip)
+    public boolean equals(Object o)
     {
-        if (((ip.a == a) && (ip.b == b)) || ((ip.a == b) && (ip.b == a)))
+        if (o instanceof IntPair)
         {
-            return true;
+            IntPair ip = (IntPair)o;
+            if (((ip.a == a) && (ip.b == b)) || ((ip.a == b) && (ip.b == a)))
+            {
+                return true;
+            }
         }
-        else
-        {
-            return false;
-        }
+
+        return false;
     }
 
     /**
