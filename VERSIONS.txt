@@ -4,8 +4,11 @@
 
 - jsettlers[.bat] and jsettlersd[.bat] scripts added for easier command
   line startup
-- Clients now accept 0 args and prompt for server when startd from
-  comand line
+
+    > 1.0.5 (build 2004-06-12)
+
+- Fixed an error introduced into the applet initialization which kept
+  the PORT property from being read properly
 
     > 1.0.4 (build 2004-06-10)
 
