@@ -35,6 +35,7 @@ CREATE TABLE games (
         score3        SMALLINT, 
         score4        SMALLINT, 
         starttime     TIMESTAMP,
+        INDEX (gamename)
 );
 
 CREATE TABLE robotparams (
