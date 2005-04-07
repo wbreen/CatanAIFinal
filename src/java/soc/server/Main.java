@@ -31,6 +31,8 @@ import java.util.Properties;
 
 public class Main
 {
+    private static final String DEFAULT_PROPERTIES_NAME = "jsettlersd.properties";
+    
     /** Server port, which must be passed to constructor of server. */
     private static int port = SOCServer.DEFAULT_PORT;
 
@@ -190,7 +192,7 @@ public class Main
         StringBuffer m = new StringBuffer()
           .append("USAGE: jsettlersd [options]"+nl)
           .append("   or: jsettlersd [options] [port max-connections db-user db-pass]]"+nl)
-          .append("Startup options are read from jsetters.properties in JSETTLERS_HOME,"+nl)
+          .append("Startup options are read from jsettersd.properties in JSETTLERS_HOME,"+nl)
           .append("unless the -porpertyfile option us used. Command line option (keys)"+nl)
           .append("are shown for options which may be set in the properties file."+nl+nl)
           .append("Options take precidence over arguments, which take precidence over"+nl)
@@ -231,9 +233,11 @@ public class Main
             // jsettlers.home should be set by startup script
             String home = System.getProperty("jsettlers.home");
             if (home != null) {
-                propFile = new File(home, "jsettlers.properties");
-                if (! propFile.exists())
+                propFile = new File(home,  DEFAULT_PROPERTIES_NAME);
+                if (! propFile.exists()) {
+                    System.err.println ("Property file not found: " + propFile);
                     propFile = null;
+                }
             }
         }
 
