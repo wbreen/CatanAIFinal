@@ -98,7 +98,7 @@ public class SOCDBHelper
     
     private static String RECORD_LOGIN_COMMAND =    "INSERT INTO logins VALUES (?,?,?);";
     
-    private static String RESET_HUMAN_STATS =       "UPDATE users SET wins = 0, losses = 0, totalpoints = 0 WHERE nickname = ? AND password = ?;";
+    private static String RESET_HUMAN_STATS =       "UPDATE users SET wins = 0, losses = 0, totalpoints = 0 WHERE nickname = ?;";
     
     private static String ROBOT_PARAMS_QUERY =      "SELECT * FROM robotparams WHERE robotname = ?;";
     
@@ -782,48 +782,36 @@ public class SOCDBHelper
      * DOCUMENT ME!
      *
      * @param userName for account to be reset
-     * @param password for account to be reset
      *
-     * @return true if the account was reset
+     * @return true if the account was reset, false if not connected
      *
      * @throws SQLException DOCUMENT ME!
      */
-    public static String resetStatistics(String userName, String password) throws SQLException
+    public static boolean resetStatistics(String userName) throws SQLException
     {
+        boolean result = false;
+        
         // ensure that the JDBC connection is still valid
         if (checkConnection())
         {
             try
             {
-                // Fill in the data for the hasAccount prepared statement
-                hasAccountQuery.setString(1, userName);
-                hasAccountQuery.setString(2, password);
+                // Server will have authenticated (may be admin)
                 
-                // Execute query
-                ResultSet rs = hasAccountQuery.executeQuery();
+                // Fill in the data values to the Prepared statement
+                resetHumanStats.setString(1, userName);
                 
-                if (rs.next())
-                {                
-                    // Fill in the data values to the Prepared statement
-                    resetHumanStats.setString(1, userName);
-                    resetHumanStats.setString(2, password);
+                // execute the Command
+                resetHumanStats.executeUpdate();
 
-                    // execute the Command
-                    resetHumanStats.executeUpdate();
-                    
-                    return "Statistics have been successfully reset ";
-                }
-                else
-                {
-                    return "Password given does not match password ";
-                }
+                result = true;
             }
             catch (SQLException sqlE)
             {
                 handleSQLException(sqlE);
             }
         }
-        return "Connection failed.";
+        return result; // failure only on error
     }
 
     /**
