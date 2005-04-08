@@ -143,10 +143,14 @@ public class SOCDBHelper
      * @throws SQLException if an SQL command fails, or the db couldn't be
      * initialied
      */
-    public static void initialize(Properties props) throws SQLException
+    public static boolean initialize(Properties props) throws SQLException
     {
         if (isConnected())
             throw new IllegalStateException("Database already initialized");
+
+        String enable = props.getProperty(SOCDBHelper.JSETTLERS_DB_ENABLED);
+        if (! Boolean.valueOf(enable).booleanValue())
+            return false;
         
         // extract info from properties
         userName = props.getProperty(JSETTLERS_DB_USER);
@@ -176,6 +180,8 @@ public class SOCDBHelper
             sx.initCause(x);
             throw sx;
         }
+        
+        return isConnected();
     }
 
     /**
