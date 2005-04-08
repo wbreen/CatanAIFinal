@@ -239,6 +239,10 @@ public class Main
                     propFile = null;
                 }
             }
+            else
+            {
+                System.err.println("jsettlers.home unspecified: using default settings");
+            }
         }
 
         try {
