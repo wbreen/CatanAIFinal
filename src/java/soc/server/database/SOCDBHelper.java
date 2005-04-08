@@ -56,6 +56,9 @@ import java.util.Vector;
  */
 public class SOCDBHelper
 {
+    /** Property to specify the SQL database server. */
+    public static final String JSETTLERS_DB_ENABLED = "jsettlers.db.enabled";
+
     /** Property to specify the SQL database username. */
     public static final String JSETTLERS_DB_USER = "jsettlers.db.user";
 
