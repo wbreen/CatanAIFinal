@@ -1782,7 +1782,6 @@ public class SOCServer extends Server
             c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
         }
 
-        System.err.println("Server.auth: "+result);
         return result;
     }
 
