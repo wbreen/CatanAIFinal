@@ -1728,60 +1728,54 @@ public class SOCServer extends Server
     }
 
     /**
-     * authenticate the user
-     * see if the user is in the db, if so then check the password
-     * if they're not in the db, but they supplied a password
-     * then send a message
-     * if they're not in the db, and no password, then ok
+     * Authenticate the user. If the user is in the db, the password is
+     * validated. If the user is <i>not</i> in the db, and requireDB is true,
+     * or a non empty password was supplied, <code>false</code> is
+     * returned. Finally, all other calls return <code>true</code>.
      *
      * @param c         the user's connection
      * @param userName  the user's nickname
      * @param password  the user's password
+     * @param requireDB true if database authentication is required
      * @return true if the user has been authenticated
      */
-    private boolean authenticateUser(Connection c, String userName, String password)
+    private boolean authenticateUser(Connection c, String userName, String password, boolean requireDB)
     {
-        String userPassword = null;
-
+        boolean result = false;
+        
         try
         {
-            userPassword = SOCDBHelper.getUserPassword(userName);
-        }
-        catch (SQLException sqle)
-        {
-            // Indicates a db problem: don't authenticate empty password
-            c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
-            return false;
-        }
+            SOCDBHelper.Auth auth = SOCDBHelper.authenticate(userName, password, c.host());
 
-        if (userPassword != null)
-        {
-            if (!userPassword.equals(password))
+            if (auth == SOCDBHelper.Auth.PASS)
+            {
+                result = true;
+            }
+            else if (auth == SOCDBHelper.Auth.FAIL)
             {
                 c.put(SOCStatusMessage.toCmd("Incorrect password for '" + userName + "'."));
-
-                return false;
             }
-        }
-        else if (!password.equals(""))
-        {
-            c.put(SOCStatusMessage.toCmd("No user with the nickname '" + userName + "' is registered with the system."));
-
-            return false;
-        }
-
-        try
-        {
-            // Update the last login time
-            SOCDBHelper.recordLogin(userName, c.host(), System.currentTimeMillis());
+            else // auth == SOCDBHelper.Auth.UNKNOWN
+            {
+                if (! password.equals("")) // no such user, but gave password
+                {
+                    c.put(SOCStatusMessage.toCmd("No user with the nickname '" + userName +
+                                                 "' is registered with the system."));
+                }
+                else // no db in use, or no such user, but check if db required
+                {
+                    result = ! requireDB;
+                }
+            }
         }
         catch (SQLException sqle)
         {
+            // Indicates a db problem
             c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
-            return false;
         }
 
-        return true;
+        System.err.println("Server.auth: "+result);
+        return result;
     }
 
     /**
@@ -1794,17 +1788,23 @@ public class SOCServer extends Server
     {
             D.ebugPrintln("handleJOIN: " + mes);
 
-            // Check that the nickname is ok
-            if ((c.data == null) && (!checkNickname(mes.getNickname())))
+            // handle new connections
+            if (c.data == null)
             {
-                c.put(SOCStatusMessage.toCmd("Someone with that nickname is already logged into the system."));
-
-                return;
-            }
-
-            if ((c.data == null) && (!authenticateUser(c, mes.getNickname(), mes.getPassword())))
-            {
-                return;
+                // Check that the nickname is ok
+                if (! checkNickname(mes.getNickname()))
+                {
+                    c.put(SOCStatusMessage.toCmd("Someone with that nickname is already logged into the system."));
+                    return;
+                }
+                // authenticate, sending message
+                if (! authenticateUser(c, mes.getNickname(), mes.getPassword(), false))
+                {
+                    return;
+                }
+                
+                c.data = mes.getNickname();
+                numberOfUsers++;
             }
 
             // Check that the channel name is ok
@@ -1813,11 +1813,6 @@ public class SOCServer extends Server
                return;
                }
              */
-            if (c.data == null)
-            {
-                c.data = mes.getNickname();
-                numberOfUsers++;
-            }
 
             // Tell the client that everything is good to go
             c.put(SOCJoinAuth.toCmd(mes.getNickname(), mes.getChannel()));
@@ -1948,24 +1943,24 @@ public class SOCServer extends Server
     {
             D.ebugPrintln("handleJOINGAME: " + mes);
 
-            // Check that the nickname is ok
-            if ((c.data == null) && (!checkNickname(mes.getNickname())))
+            // handle new connections
+            if (c.data == null)
             {
-                c.put(SOCStatusMessage.toCmd("Someone with that nickname is already logged into the system."));
-
-                return;
-            }
-
-            if ((c.data == null) && (!authenticateUser(c, mes.getNickname(), mes.getPassword())))
-            {
-                return;
-            }
-
-                if (c.data == null)
+                // Check that the nickname is ok
+                if (! checkNickname(mes.getNickname()))
                 {
-                    c.data = mes.getNickname();
-                    numberOfUsers++;
+                    c.put(SOCStatusMessage.toCmd("Someone with that nickname is already logged into the system."));
+                    return;
                 }
+                // authenticate, sending message
+                if (! authenticateUser(c, mes.getNickname(), mes.getPassword(), false))
+                {
+                    return;
+                }
+                
+                c.data = mes.getNickname();
+                numberOfUsers++;
+            }
 
             // Check that the game name is ok
             /*
@@ -3929,41 +3924,29 @@ public class SOCServer extends Server
      */
     private void handleRESETSTATS(Connection c, SOCResetStatistics mes)
     {
-        // Check to see if there is an account with the requested nickname
-        String userPassword = null;
-
-        try
+        // always verify password for resetting stats (currently not expected
+        //   to have already authenticated yet)
+        // ok, if logged in via other client (gui or other)
+        // authenticate User will tell them if they're not allowed in
+        if (authenticateUser(c, mes.getNickname(), mes.getPassword(), true))
         {
-            userPassword = SOCDBHelper.getUserPassword(mes.getNickname());
-            
-            if (userPassword == null)
+            try
             {
-                c.put(SOCStatusMessage.toCmd("The name '" + mes.getNickname() + "' does not have an account."));
-                return;
+                if (SOCDBHelper.resetStatistics(mes.getNickname()))
+                {
+                    c.put(SOCStatusMessage.toCmd("Statistics have been successfully reset "));
+                    
+                    handleGETSTATISTICS(c, new SOCGetStatistics(SOCPlayerInfo.HUMAN));
+                }
+                else 
+                    c.put(SOCStatusMessage.toCmd("Not connected to database. Statistics not reset."));
+            }
+            catch (SQLException sqle)
+            {
+                // Indicates a db problem: don't continue
+                c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
             }
         }
-        catch (SQLException sqle)
-        {
-            // Indicates a db problem: don't continue
-            c.put(SOCStatusMessage.toCmd("Problem connecting to database, please try again later."));
-            return;
-        }
-
-        // Reset statistics for the nickname and password in the message
-        String resetResults = "";
-
-        try
-        {
-            resetResults = SOCDBHelper.resetStatistics(mes.getNickname(), mes.getPassword());
-        }
-        catch (SQLException sqle)
-        {
-            System.err.println("Error resetting account in db.");
-        }
-
-        c.put(SOCStatusMessage.toCmd(resetResults + "for '" + mes.getNickname() + "'."));
-
-        handleGETSTATISTICS(c, new SOCGetStatistics(SOCPlayerInfo.HUMAN));
     }
 
     
