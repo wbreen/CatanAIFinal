@@ -148,8 +148,13 @@ public class SOCDBHelper
         if (isConnected())
             throw new IllegalStateException("Database already initialized");
 
-        String enable = props.getProperty(SOCDBHelper.JSETTLERS_DB_ENABLED);
-        if (! Boolean.valueOf(enable).booleanValue())
+        boolean enabled = false;
+        if (props != null)
+        {
+            String p = props.getProperty(SOCDBHelper.JSETTLERS_DB_ENABLED);
+            enabled = Boolean.valueOf(p).booleanValue();
+        }
+        if (! enabled)
             return false;
         
         // extract info from properties
