@@ -214,8 +214,16 @@ public class SOCServer extends Server
 
         try
         {
-            SOCDBHelper.initialize(props);
-            System.err.println("User database initialized.");
+            String enable = props.getProperty(SOCDBHelper.JSETTLERS_DB_ENABLED);
+            if (Boolean.valueOf(enable).booleanValue())
+            {
+                SOCDBHelper.initialize(props);
+                System.err.println("User database initialized.");
+            }
+            else
+            {
+                System.err.println("User database disabled.");
+            }
         }
         catch (SQLException x) // just a warning
         {
