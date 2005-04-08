@@ -33,6 +33,7 @@ import soc.server.genericServer.Server;
 
 import soc.util.IntPair;
 import soc.util.SOCRobotParameters;
+import soc.util.SOCPlayerInfo;
 import soc.util.Version;
 
 import java.sql.SQLException;
@@ -1710,7 +1711,7 @@ public class SOCServer extends Server
                     break;
                     
                 case SOCMessage.GETSTATISTICS:
-                    handleGETSTATISTICS(c, (SOCGetStatistics) mes);                    
+                    handleGETSTATISTICS(c, (SOCGetStatistics) mes);
                     break;
                 
                 case SOCMessage.RESETSTATS:
@@ -3908,24 +3909,15 @@ public class SOCServer extends Server
      */
     private void handleGETSTATISTICS(Connection c, SOCGetStatistics mes)
     {
-        String[][] statistics = null;
-
         try
         {
-            statistics = SOCDBHelper.getStatistics(mes.getStype());
+            Vector statistics = SOCDBHelper.getStatistics(mes.getStype());
+            
+            c.put(SOCShowStatistics.toCmd(mes.getStype(), statistics));
         }
         catch (SQLException sqle)
         {
-            System.err.println("Error getting statistics from db.");
-        }
-
-        if (statistics != null)
-        {
-            c.put(SOCShowStatistics.toCmd(mes.getStype(), statistics));
-        }
-        else
-        {
-            c.put(SOCStatusMessage.toCmd("No " + mes.getStype() + " statistics retrieved due to error."));
+            c.put(SOCStatusMessage.toCmd("Error retrieving statistics."));
         }
     }
 
@@ -3970,32 +3962,8 @@ public class SOCServer extends Server
         }
 
         c.put(SOCStatusMessage.toCmd(resetResults + "for '" + mes.getNickname() + "'."));
-        
-        // Update statistics table to reflect the change
-        String[][] statistics = null;
-        
-        try
-        {
-            // Gather new statistics data
-            statistics = SOCDBHelper.getStatistics("human");
-        }
-        catch (SQLException sqle)
-        {
-            System.err.println("Error getting statistics from db.");
-            return;
-        }
-        
-        if (statistics != null)
-        {
-            // Send the new data to the client
-            c.put(SOCShowStatistics.toCmd("human", statistics));
-        }
-        else
-        {
-            c.put(SOCStatusMessage.toCmd("Error prevented refresh of human statistics."));
-        }
-    
-        return;
+
+        handleGETSTATISTICS(c, new SOCGetStatistics(SOCPlayerInfo.HUMAN));
     }
 
     

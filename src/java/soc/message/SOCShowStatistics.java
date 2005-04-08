@@ -27,9 +27,11 @@
 package soc.message;
 
 import soc.server.genericServer.Connection;
+import soc.util.SOCPlayerInfo;
 
 import java.util.Enumeration;
 import java.util.StringTokenizer;
+import java.util.Vector;
 
 
 /**
@@ -47,7 +49,7 @@ public class SOCShowStatistics extends SOCMessage
     /**
      * The statistics
      **/
-    private String[][] statistics;
+    private Vector statistics;
 
     /**
      * Create a ShowStats message.
@@ -55,7 +57,7 @@ public class SOCShowStatistics extends SOCMessage
      * @param st     type of statistics(human|robot)
      * @param stats  statistics array
      **/
-    public SOCShowStatistics(String st, String[][] stats)
+    public SOCShowStatistics(String st, Vector stats)
     {
         messageType = SHOWSTATS;
         stype = st;
@@ -73,7 +75,7 @@ public class SOCShowStatistics extends SOCMessage
     /**
      * @return the statistics
      **/
-    public String[][] getStatistics()
+    public Vector getStatistics()
     {
         return statistics;
     }
@@ -89,29 +91,39 @@ public class SOCShowStatistics extends SOCMessage
     }
 
     /**
-     * SHOWSTATS sep stype sep2 statistics
+     * SHOWSTATS sep stype sep name sep2 rank sep2 wins sep2 losses sep2
+     * totalPoints sep2 averagePoints sep2 winRatio sep name ...
      *
      * @param st     the type of statistics
-     * @param stats  the statistics array
+     * @param stats  Vector of soc.util.SOCPlayerInfo objects
      * @return       the type and statistics as a string
      **/
-    public static String toCmd(String st, String[][] stats)
+    public static String toCmd(String st, Vector stats)
     {
-        int cols = stats[0].length;     // Number of columns in stats
-        int rows = stats.length;        // Number of rows in stats
-        String[][] statistics = null;
-        statistics = stats;
-        String data = SHOWSTATS + sep + st;
+        StringBuffer data = new StringBuffer();
+        data.append(SHOWSTATS).append(sep).append(st);
 
-        for (int row = 0; row < rows; row++)
+        Enumeration statEnum = stats.elements();
+        while (statEnum.hasMoreElements())
         {
-            for (int col = 0; col < cols; col++)
-            {
-                data += (sep2 + statistics[row][col]);
-            }
+            SOCPlayerInfo info = (SOCPlayerInfo) statEnum.nextElement();
+            data.append(sep);
+            
+            data.append(info.getName());
+            data.append(sep2);
+            data.append(info.getRank());
+            data.append(sep2);
+            data.append(info.getWins());
+            data.append(sep2);
+            data.append(info.getLosses());
+            data.append(sep2);
+            data.append(info.getTotalPoints());
+            data.append(sep2);
+            data.append(info.getAveragePoints());
+            data.append(sep2);
+            data.append(info.getWinRatio());
         }
-                
-        return data;
+        return data.toString();
     }
 
     /**
@@ -122,27 +134,30 @@ public class SOCShowStatistics extends SOCMessage
      */
     public static SOCShowStatistics parseDataStr(String s)
     {
-        int cols = 7;
-        String st;
-        
-        StringTokenizer stk = new StringTokenizer(s, sep2);
-        String[][] statistics = new String[stk.countTokens()/cols][cols];
-        
+        Vector statistics = new Vector();
+        String st = null;
+
         try
         {
-            int row = 0;
-            
-            st = stk.nextToken();
+            StringTokenizer stk = new StringTokenizer(s, sep);
 
+            st = stk.nextToken();
+            
             while (stk.hasMoreTokens())
             {
-                for (int col = 0; col < 7; col++)
-                {
-                    //System.err.println("row = " + row + ", col = " + col);
-                    statistics[row][col] = (stk.nextToken());
-                    //System.err.println("Token = " + statistics[row][col]);
-                }
-                row ++;
+                String s2 = stk.nextToken();
+                StringTokenizer i = new StringTokenizer(s2, sep2);
+                
+                SOCPlayerInfo info = new SOCPlayerInfo();
+                info.setName(i.nextToken());
+                info.setRank(Integer.parseInt(i.nextToken()));
+                info.setWins(Integer.parseInt(i.nextToken()));
+                info.setLosses(Integer.parseInt(i.nextToken()));
+                info.setTotalPoints(Integer.parseInt(i.nextToken()));
+                info.setAveragePoints(Float.parseFloat(i.nextToken()));
+                info.setWinRatio(Float.parseFloat(i.nextToken()));
+                
+                statistics.add(info);
             }
         }
         catch (Exception e)
@@ -159,22 +174,16 @@ public class SOCShowStatistics extends SOCMessage
      */
     public String toString()
     {
-        int cols = statistics[0].length;     // Number of columns in stats
-        int rows = statistics.length;        // Number of rows in stats
-        String s = "SOCShowStatistics:stype=" + stype + "|statistics=";
-
-        try
+        StringBuffer buf = new StringBuffer("SOCShowStatistics:stype=");
+        buf.append(stype).append("|statistics=");
+        
+        Enumeration statEnum = statistics.elements();
+        while (statEnum.hasMoreElements())
         {
-            for (int row = 0; row < rows; row++)
-            {
-                for (int col = 0; col < cols; col++)
-                {
-                    s += (sep2 + statistics[row][col]);
-                }
-            }
+            SOCPlayerInfo info = (SOCPlayerInfo) statEnum.nextElement();
+            buf.append("|").append(info);
         }
-        catch (Exception e) {}
-
-        return s;
+        
+        return buf.toString();
     }
 }

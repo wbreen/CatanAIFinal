@@ -29,6 +29,7 @@ import soc.message.SOCResetStatistics;
 import soc.message.SOCShowStatistics;
 import soc.message.SOCStatusMessage;
 import soc.server.database.SOCDBHelper;
+import soc.util.SOCPlayerInfo;
 import soc.util.Version;
 
 import java.applet.Applet;
@@ -61,6 +62,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Vector;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -70,6 +74,7 @@ import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 
 
 /**
@@ -90,7 +95,6 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
     protected TextField status;
     protected Button reset;
     protected Label messageLabel;
-    protected AppletContext ac;
     protected boolean submitLock;
 
     protected CardLayout cardLayout;
@@ -103,43 +107,75 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
     protected Thread reader = null;
     protected Exception ex = null;
     protected boolean connected = false;
-    protected int rows;
-    protected static int humanRows;
-    protected static int robotRows;
     
     /**
      * Declare table model for statistics data
      **/
     
-    public class statisticsTableModel extends AbstractTableModel
+    public static class StatisticsTableModel extends AbstractTableModel
     {
-        public final String[] columnNames = {"Name",
-                                             "Rank",
-                                             "Wins",
-                                             "Losses",
-                                             "Ttl. Points",
-                                             "Avg. Points",
-                                             "Pct. Wins"};
-        public final Object[] longValues = { "nnnnnnnnnnnnnnn",
-                                             new Integer(999),                                             
-                                             new Integer(999),
-                                             new Integer(999),
-                                             new Integer(9999),
-                                             new Float(10.00),
-                                             new Float(100.00) };
+        public static final String[] columnNames = {"Name",
+                                                    "Rank",
+                                                    "Wins",
+                                                    "Losses",
+                                                    "Ttl. Points",
+                                                    "Avg. Points",
+                                                    "Pct. Wins"};
+        public static final Object[] longValues = { "nnnnnnnnnnnnnnn",
+                                                    new Integer(999),
+                                                    new Integer(999),
+                                                    new Integer(999),
+                                                    new Integer(9999),
+                                                    new Float(10.00),
+                                                    new Float(100.00) };
                                              
-        private Object[][] data = new Object[rows][columnNames.length];        
-        public boolean editable = false;
+        private List data = new LinkedList();
         
-        public int getColumnCount()                {return columnNames.length;}
-        public int getRowCount()                   {return data.length;}
-        public String getColumnName(int col)       {return columnNames[col];}
-        public Object getValueAt(int row, int col) {return data[row][col];} // Causing NullPointerException
+        public int getColumnCount()
+        {
+            return columnNames.length;
+        }
+        public int getRowCount()
+        {
+            return data.size();
+        }
+        public boolean isCellEditable(int row, int col)
+        {
+            return false;
+        }
+        public String getColumnName(int col)
+        {
+            return columnNames[col];
+        }
+        public Object getValueAt(int row, int col)
+        {
+            SOCPlayerInfo info = (SOCPlayerInfo) data.get(row);
+            
+            switch (col)
+            {
+                case 0:
+                    return info.getName();
+                case 1:
+                    return new Integer(info.getRank());
+                case 2:
+                    return new Integer(info.getWins());
+                case 3:
+                    return new Integer(info.getLosses());
+                case 4:
+                    return new Integer(info.getTotalPoints());
+                case 5:
+                    return new Float(info.getAveragePoints());
+                case 6:
+                    return new Float(info.getWinRatio());
+                default:
+                    return "<invalid: " + col + ">";
+            }
+        }
         
         /**
          * JTable uses this method to determine the default renderer/
          * editor for each cell.
-         **/
+         */
         public Class getColumnClass(int c) 
         {
             switch (c)
@@ -147,25 +183,32 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
                 case 0 :
                     return String.class;
                 default :
-                    return Integer.class;
+                    return Number.class;
             }
         }
-
-        public void addRow(Object[] rowData)             {data[getRowCount()] = rowData;}
-        public void insertRow(int row, Object[] rowData) {data[row] = rowData;}
-        public void reshowData()                         {fireTableDataChanged();}
-        public void setRowCount(int rowCount)            {Object[][] data = new Object[rowCount][columnNames.length];}
-        public void setValueAt(Object value, int row, int col) 
+        /**
+         * Clears data and set's it anew, in one fell swoop
+         */
+        public void setData(Vector info)
         {
-            data[row][col] = value;
-            fireTableCellUpdated(row, col);
+            data.clear();
+            data.addAll(info);
+            fireTableDataChanged();
+        }
+        public void addRow(SOCPlayerInfo info)
+        {
+            data.add(info);
+            int row = data.size()-1;
+            fireTableRowsInserted(row, row);
+        }
+        public void setValueAt(Object value, int row, int col)
+        {
+            // not editable... ignore
         }
     };
     
-    public JTable humanStatsTable = new JTable(new statisticsTableModel());
-    public JTable robotStatsTable = new JTable(new statisticsTableModel());
-    public JScrollPane humanScroll = new JScrollPane(humanStatsTable);
-    public JScrollPane robotScroll = new JScrollPane(robotStatsTable);
+    protected StatisticsTableModel humanModel = null;
+    protected StatisticsTableModel robotModel = null;
     
     /**
      * the nickname
@@ -182,7 +225,7 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
      **/
     public SOCStatisticsClient()
     {
-        this(null, 8880, 20, 12);
+        this(null, 8880);
     }
 
     /**
@@ -192,12 +235,10 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
      * @param h  host
      * @param p  port
      **/
-    public SOCStatisticsClient(String h, int p, int hr, int rr)
+    public SOCStatisticsClient(String h, int p)
     {
         host = h;
         port = p;
-        humanRows = hr;
-        robotRows = rr;
     }
 
     /**
@@ -228,21 +269,15 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
      **/
     private void initColumnSizes(JTable table)
     {
-        statisticsTableModel model = (statisticsTableModel)table.getModel();
-        TableColumn column = null;
-        Component comp = null;
-        int headerWidth = 0;
-        int cellWidth = 0;
-        Object[] longValues = model.longValues;
-        TableCellRenderer headerRenderer = table.getTableHeader().getDefaultRenderer();
-        
-        for (int i = 0; i < model.columnNames.length; i++)
+        Object[] longValues = StatisticsTableModel.longValues;
+        TableColumnModel columnModel = table.getColumnModel();
+      
+        for (int i = 0; i < longValues.length; i++)
         {
-            column = table.getColumnModel().getColumn(i);
-            comp = headerRenderer.getTableCellRendererComponent(null, column.getHeaderValue(), false, false, 0, 0);
-            headerWidth = comp.getPreferredSize().width;
-            comp = table.getDefaultRenderer(model.getColumnClass(i)).getTableCellRendererComponent(table, longValues[i], false, false, 0, i);
-            cellWidth = comp.getPreferredSize().width;
+            TableColumn column = columnModel.getColumn(i);
+            TableCellRenderer renderer = table.getTableHeader().getDefaultRenderer();
+            Component comp = renderer.getTableCellRendererComponent(null, longValues[i], false, false, -1, 0);
+            column.setPreferredWidth(comp.getWidth());
         }
     }
     
@@ -264,8 +299,6 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
 
         reset.addActionListener(this);
 
-        ac = null;
-
         GridBagLayout gbl = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
         Panel mainPane = new Panel(gbl);
@@ -280,10 +313,10 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
 
         buildConstraints(gbc, 0, 1, 7, 10, 100, 50);
         gbc.fill = GridBagConstraints.BOTH;
-        rows = humanRows;
-        humanStatsTable = new JTable(new statisticsTableModel()); 
-        initColumnSizes(humanStatsTable);
-        humanScroll = new JScrollPane(humanStatsTable);
+        humanModel = new StatisticsTableModel();
+        JTable humanTable = new JTable(humanModel);
+        initColumnSizes(humanTable);
+        JScrollPane humanScroll = new JScrollPane(humanTable);
         gbl.setConstraints(humanScroll, gbc);
         mainPane.add(humanScroll);
         gbc.fill = GridBagConstraints.NONE;
@@ -337,10 +370,10 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
         
         buildConstraints(gbc, 0, 15, 7, 10, 0, 50);
         gbc.fill = GridBagConstraints.BOTH;
-        rows = robotRows;
-        robotStatsTable = new JTable(new statisticsTableModel());
-        initColumnSizes(robotStatsTable);
-        robotScroll = new JScrollPane(robotStatsTable);
+        robotModel = new StatisticsTableModel();
+        JTable robotTable = new JTable(robotModel);
+        initColumnSizes(robotTable);
+        JScrollPane robotScroll = new JScrollPane(robotTable);
         gbl.setConstraints(robotScroll, gbc);
         mainPane.add(robotScroll);
         gbc.fill = GridBagConstraints.NONE;
@@ -403,37 +436,6 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
         if (intValue != -1)
             setForeground(new Color(intValue));
         
-        // Get number of rows for tables
-        {
-            String humanRowsString = getParameter("HUMANROWS");
-            if (humanRowsString != null)
-            {
-                try
-                {
-                    humanRows = Integer.parseInt(humanRowsString);
-                }
-                catch (NumberFormatException e) 
-                {
-                    // Use default number of rows
-                    humanRows = 20;
-                }
-            }
-            
-            String robotRowsString = getParameter("ROBOTROWS");
-            if (robotRowsString != null)
-            {
-                try
-                {
-                    robotRows = Integer.parseInt(robotRowsString);
-                }
-                catch (NumberFormatException e) 
-                {
-                    // Use default number of rows
-                    robotRows = 20;
-                }
-            }
-        }
-
         initVisualElements(); // after the background is set
         
         System.out.println("Getting host...");
@@ -492,38 +494,18 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
 
     /**
      * Show statistics is seperate tables
-     **/
-    public void showStats(String type, String[][] statsArray)
+     * @param type SOCPlayerInfo.HUMAN or SOCPlayerInfo.ROBOT
+     * @param statistics Vector of soc.util.SOCPlayerInfo objects
+     */
+    public void showStats(String type, Vector statistics)
     {
-        int cols = statsArray[0].length;
-        int rows = statsArray.length;
-        Object[] rowData = new Object[cols];
-
-        if (type.equals("human"))
+        if (type.equals(SOCPlayerInfo.ROBOT))
         {
-            // Transfer data from the statsArray to humanStatsTable
-            for (int row = 0; row < rows; row++)
-            {
-                for (int col = 0; col < cols; col++)
-                {
-                    ((statisticsTableModel)humanStatsTable.getModel()).setValueAt(statsArray[row][col], row, col);
-                }
-            }
-            
-            // Reshow the data to (hopefully) insure correct appearance
-            ((statisticsTableModel)humanStatsTable.getModel()).reshowData();
-            
+            robotModel.setData(statistics);
         }
-        else  // type = "robot"
+        else  // type == SOCPlayerInfo.HUMAN
         {
-            // Transfer data from the statsArray to robotStatsTable
-            for (int row = 0; row < rows; row++)
-            {
-                for (int col = 0; col < cols; col++)
-                {
-                    robotStatsTable.setValueAt(statsArray[row][col], row, col);
-                }
-            }
+            humanModel.setData(statistics);
         }
     }
     
@@ -780,7 +762,7 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
      **/
     public static void usage()
     {
-        System.err.println("usage: java soc.client.SOCStatisticsClient <host> <port> <# rows human tbl> <# rows robot tbl>");
+        System.err.println("usage: java soc.client.SOCStatisticsClient <host> <port>");
     }
 
     /**
@@ -790,7 +772,7 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
     {
         SOCStatisticsClient client = new SOCStatisticsClient();
         
-        if (args.length != 4)
+        if (args.length != 2)
         {
             usage();
             System.exit(1);
@@ -800,8 +782,6 @@ public class SOCStatisticsClient extends Applet implements Runnable, ActionListe
         {
             client.host = args[0];
             client.port = Integer.parseInt(args[1]);
-            humanRows = Integer.parseInt(args[2]);
-            robotRows = Integer.parseInt(args[3]);
         } 
         catch (NumberFormatException x) 
         {

@@ -23,6 +23,7 @@ package soc.server.database;
 import soc.game.SOCGame;
 import soc.game.SOCPlayer;
 
+import soc.util.SOCPlayerInfo;
 import soc.util.SOCRobotParameters;
 
 import java.sql.Connection;
@@ -712,18 +713,15 @@ public class SOCDBHelper
     /**
      * DOCUMENT ME!
      *
-     * @param type either "human" or "robot"
+     * @param type either SOCPlayerInfo.HUMAN or SOCPlayerInfo.ROBOT
      *
      * @return array of robot data
      *
      * @throws SQLException DOCUMENT ME!
      */
-    public static String[][] getStatistics(String type) throws SQLException
+    public static Vector getStatistics(String type) throws SQLException
     {
-        // this belongs elsewhere
-        final int STAT_COLUMNS = 7;
-
-        String[][] statistics = null;
+        Vector statistics = new Vector();
         Statement stmt = null;
         
         // ensure that the JDBC connection is still valid
@@ -731,45 +729,34 @@ public class SOCDBHelper
         {
             try
             {
-                Vector rows = new Vector();
                 ResultSet resultSet = null;
                 stmt = connection.createStatement();
 
                 // Execute the appropriate query
-                if (type.equals("robot"))
+                if (type.equals(SOCPlayerInfo.ROBOT))
                 {
                     resultSet = stmt.executeQuery(ROBOT_STATS_QUERY);
                 }
-                else
+                else // default, even if garbled
                 {
                     resultSet = stmt.executeQuery(HUMAN_STATS_QUERY);
                 }
 
                 while (resultSet.next())
                 {
-                    String[] rowData = new String[STAT_COLUMNS];
-                    
-                    rowData[0] = resultSet.getString(1);               // Name
-                    rowData[1] = Integer.toString(resultSet.getRow()); // Rank
-                    rowData[2] = resultSet.getString(2);               // Wins
-                    rowData[3] = resultSet.getString(3);               // Losses
-                    rowData[4] = resultSet.getString(4);               // Total Points
-                    rowData[5] = resultSet.getString(5);               // Average Points
-                    rowData[6] = resultSet.getString(6);               // Percent Wins
+                    SOCPlayerInfo info = new SOCPlayerInfo();
 
-                    rows.add(rowData);
+                    info.setName(resultSet.getString(1));
+                    info.setRank(resultSet.getRow());
+                    info.setWins(resultSet.getInt(2));
+                    info.setLosses(resultSet.getInt(3));
+                    info.setTotalPoints(resultSet.getInt(4));
+                    info.setAveragePoints(resultSet.getFloat(5));
+                    info.setWinRatio(resultSet.getFloat(6));
+
+                    statistics.add(info);
                 }
                 resultSet.close();
-                
-                // Create the array of statistics to return
-                statistics = new String[rows.size()][];
-                
-                int index = 0;
-                Iterator iter = rows.iterator();
-                while (iter.hasNext())
-                {
-                    statistics[index++] = (String[]) iter.next();
-                }
             }
             catch (SQLException sqlE)
             {

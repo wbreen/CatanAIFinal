@@ -148,30 +148,20 @@ public abstract class SOCMessage implements Serializable, Cloneable
     {
         try
         {
-            StringTokenizer st = new StringTokenizer(s, sep);
+            int sepIndex = s.indexOf(sep);
 
-            /**
-             * get the id that identifies the type of message
-             */
-            int msgId = Integer.parseInt(st.nextToken());
+            // get the id that identifies the type of message
+            int msgId = Integer.parseInt(s.substring(0,sepIndex));
 
-            /**
-             * get the rest of the data
-             */
+            // get the rest of the data
             String data;
 
-            try
-            {
-                data = st.nextToken();
-            }
-            catch (NoSuchElementException e)
-            {
+            if (sepIndex < 0)
                 data = "";
-            }
+            else
+                data = s.substring(sepIndex + 1);
 
-            /**
-             * convert the data part and create the message
-             */
+            // convert the data part and create the message
             switch (msgId)
             {
             case NULLMESSAGE:
