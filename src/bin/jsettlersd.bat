@@ -83,8 +83,7 @@ echo.
 :runJSettlers
 set MAIN_CLASS=soc.server.Main
 
-"%_JAVACMD%" %JSETTLERES_OPTS% -classpath "%LOCALCLASSPATH%" "-Djsettlers.home=%JSETTLERS_HOME%" %MAIN_CLASS% %JSETTLERS_ARGS% %JSETTLERS_CMD_LINE_ARGS%
-goto end
+"%_JAVACMD%" %JSETTLERS_OPTS% -classpath "%LOCALCLASSPATH%" "-Djsettlers.home=%JSETTLERS_HOME%" %MAIN_CLASS% %JSETTLERS_ARGS% %JSETTLERS_CMD_LINE_ARGS%
 
 goto end
 
