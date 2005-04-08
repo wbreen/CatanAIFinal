@@ -393,6 +393,7 @@ public abstract class SOCMessage implements Serializable, Cloneable
         catch (Exception e)
         {
             System.err.println("toMsg ERROR - " + e);
+            System.err.println("Msg: " + s);
             e.printStackTrace();
 
             return null;
