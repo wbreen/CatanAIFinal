@@ -6,11 +6,11 @@ import java.util.Properties;
 
 /**
  * Package level version file used to keep packaging and codebase in sync. The
- * file Version.java.in is filtered to create Version.java when Callisto is
+ * file Version.java.in is filtered to create Version.java when the program is
  * built using <a href="http://ant.apache.org">ant</a>.  If you are not using
- * ant to build Callisto you can do this manually by copying Version.java.in
- * to Version.java, replacing "@ VERSION @" with the "version" property value
- * in the file build.xml.
+ * ant to build, you can do this manually by copying Version.java.in to
+ * Version.java, replacing "@ VERSION @" with the "version" property value in
+ * the file build.xml.
  *
  * @author <a href="mailto:mchenryc@acm.org">Chadwick A. McHenry</a>
  */
