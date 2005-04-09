@@ -32,6 +32,13 @@ public class Pair
     private Object b;
 
     /**
+     * Creates a new Pair object initialized with null values.
+     */
+    public Pair() {
+        this(null, null);
+    }
+
+    /**
      * Creates a new Pair object.
      *
      * @param i DOCUMENT ME!

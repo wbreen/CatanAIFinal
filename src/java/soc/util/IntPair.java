@@ -32,6 +32,14 @@ public class IntPair
     public int b;
 
     /**
+     * Creates a new IntPair object initialized with 0 for both values.
+     */
+    public IntPair()
+    {
+        this(0, 0);
+    }
+
+    /**
      * Creates a new IntPair object.
      *
      * @param i DOCUMENT ME!
