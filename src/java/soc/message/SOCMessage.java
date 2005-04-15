@@ -150,16 +150,19 @@ public abstract class SOCMessage implements Serializable, Cloneable
         {
             int sepIndex = s.indexOf(sep);
 
-            // get the id that identifies the type of message
-            int msgId = Integer.parseInt(s.substring(0,sepIndex));
-
-            // get the rest of the data
+            int msgId;
             String data;
 
             if (sepIndex < 0)
+            {
+                msgId = Integer.parseInt(s);
                 data = "";
+            }
             else
+            {
+                msgId = Integer.parseInt(s.substring(0,sepIndex));
                 data = s.substring(sepIndex + 1);
+            }
 
             // convert the data part and create the message
             switch (msgId)
