@@ -91,8 +91,6 @@ public class SOCDBHelper
     
     private static String CREATE_ACCOUNT_COMMAND =  "INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?);";
     
-    private static String HAS_ACCOUNT_QUERY =       "SELECT * FROM users WHERE nickname = ? AND password = ? ;";
-    
     private static String HOST_QUERY =              "SELECT nickname FROM users WHERE ( users.host = ? );";
     
     private static String HUMAN_STATS_QUERY =       "SELECT nickname, wins, losses, totalpoints, totalpoints/(wins+losses) AS avg, 100 * (wins/(wins+losses)) AS pct FROM users WHERE (wins+losses) > 0 ORDER BY pct desc, avg desc, totalpoints desc;";
@@ -120,7 +118,6 @@ public class SOCDBHelper
     private static String USER_PASSWORD_QUERY =     "SELECT password FROM users WHERE ( users.nickname = ? );";
     
     private static PreparedStatement createAccountCommand = null;    
-    private static PreparedStatement hasAccountQuery = null;
     private static PreparedStatement hostQuery = null;
     private static PreparedStatement lastloginUpdate = null;
     private static PreparedStatement recordLoginCommand = null;
@@ -136,9 +133,10 @@ public class SOCDBHelper
     /**
      * This makes a connection to the database
      * and initializes the prepared statements.
+     * If props = null, we behave as though db.enabled=false;
      *
      * @param props  Properties containing minimally username, password,
-     * connection url and database driver class
+     * connection url and database driver class, or null
      * @return true if the database was initialized
      * @throws SQLException if an SQL command fails, or the db couldn't be
      * initialied
@@ -229,7 +227,6 @@ public class SOCDBHelper
         
         // prepare PreparedStatements for queries
         createAccountCommand = connection.prepareStatement(CREATE_ACCOUNT_COMMAND);
-        hasAccountQuery = connection.prepareStatement(HAS_ACCOUNT_QUERY);
         hostQuery = connection.prepareStatement(HOST_QUERY);
         lastloginUpdate = connection.prepareStatement(LASTLOGIN_UPDATE);
         recordLoginCommand = connection.prepareStatement(RECORD_LOGIN_COMMAND);
@@ -848,7 +845,6 @@ public class SOCDBHelper
             try
             {
                 createAccountCommand.close();
-                hasAccountQuery.close();
                 hostQuery.close();
                 lastloginUpdate.close();
                 recordLoginCommand.close();
