@@ -231,8 +231,10 @@ public class SOCServer extends Server
 
         startTime = System.currentTimeMillis();
         serverRobotPinger = new SOCServerRobotPinger(robots);
+        serverRobotPinger.setDaemon(true);
         serverRobotPinger.start();
         gameTimeoutChecker = new SOCGameTimeoutChecker(this);
+        gameTimeoutChecker.setDaemon(true);
         gameTimeoutChecker.start();
     }
 
