@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/CatanAIFinal/java/soc/server/SOCServer.java"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="1"/>
+</listAttribute>
+<booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="soc.server.SOCServer"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-o N7=t7 &#10;-o RD=y &#10;-Djsettlers.startrobots=20&#10;-Djsettlers.bots.botgames.total=7&#10;-Djsettlers.bots.fast_pause_percent=50&#10;-Dsoc.robot.brain.nopause=true&#10;-Djsettlers.bots.botgames.wait_sec=5&#10;-Djsettlers.bots.cookie=cook&#10;-Djsettlers.allow.debug=Y 8880 30 dbuser dbpass"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="CatanAIFinal"/>
+</launchConfiguration>
