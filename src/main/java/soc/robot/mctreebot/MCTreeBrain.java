@@ -1,10 +1,15 @@
 package soc.robot.mctreebot;
 
+/**
+ * @author William Breen
+ */
+
 import soc.game.SOCGame;
 import soc.game.SOCResourceConstants;
 import soc.game.SOCResourceSet;
 import soc.game.SOCTradeOffer;
 import soc.message.SOCMessage;
+import soc.robot.SOCPossiblePiece;
 import soc.robot.SOCRobotBrain;
 import soc.robot.SOCRobotClient;
 import soc.robot.SOCRobotNegotiator;
@@ -22,7 +27,7 @@ public class MCTreeBrain extends SOCRobotBrain{
 	
 	@Override
 	/**
-	 * If the offer is not given to us, igonre it
+	 * If the offer is not given to us, ignore it
 	 * if the offer is towards us, accept it
 	 */
 	protected int considerOffer(SOCTradeOffer offer) {
@@ -36,7 +41,10 @@ public class MCTreeBrain extends SOCRobotBrain{
 	//want to try to place something we want to build
 		//robotBrain.whatWeWantToBuild
 	//set our building plan (a stack of SOCPossiblePieces), set in planBuilding()
-	protected int idiotWilliam;
+	protected int chooseWhatToBuild() {
+		
+		return SOCPossiblePiece.ROAD;
+	}
 	
 	
 }
